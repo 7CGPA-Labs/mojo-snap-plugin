@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Arcade Gamepad Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #12131c;
+            margin: 0; padding: 0;
+            user-select: none; -webkit-user-select: none;
+            font-family: 'Press Start 2P', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 40px;
+            overflow: hidden;
+        }
+
+        .dpad-container {
+            display: grid;
+            grid-template-columns: repeat(3, 75px);
+            grid-template-rows: repeat(3, 75px);
+            background: #1f2029;
+            padding: 10px;
+            border-radius: 50%;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .d-btn {
+            background: #3a3c4d;
+            border: 2px solid #12131c;
+            color: #00f2fe;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            box-shadow: 0 4px #22232e;
+        }
+        .d-btn:active {
+            background: #00f2fe;
+            color: #12131c;
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .up { grid-column: 2; grid-row: 1; border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .left { grid-column: 1; grid-row: 2; border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .right { grid-column: 3; grid-row: 2; border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+        .down { grid-column: 2; grid-row: 3; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+
+        .action-deck {
+            display: flex;
+            gap: 25px;
+            transform: rotate(-15deg);
+        }
+
+        .act-btn {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            background: #ff4a5a;
+            color: #fff;
+            border: 4px solid #12131c;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 0 #b3303c;
+        }
+        .act-btn:active {
+            background: #ff7380;
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .brand-text {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #4e5166;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dpad-container">
+        <button class="d-btn up" data-btn="UP">▲</button>
+        <button class="d-btn left" data-btn="LEFT">◀</button>
+        <button class="d-btn right" data-btn="RIGHT">▶</button>
+        <button class="d-btn down" data-btn="DOWN">▼</button>
+    </div>
+
+    <div class="action-deck">
+        <button class="act-btn" data-btn="B">B</button>
+        <button class="act-btn" data-btn="A">A</button>
+    </div>
+
+    <div class="brand-text">CORE LINK CONTROLLER: P1</div>
+
+    <script>
+        const socket = new WebSocket(`ws://${window.location.host}`);
+
+        function transmit(buttonName, state) {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'CONTROLLER_INPUT',
+                    button: buttonName,
+                    action: state
+                }));
+            }
+        }
+
+        document.querySelectorAll('button').forEach(button => {
+            const targetBtn = button.getAttribute('data-btn');
+            
+            button.addEventListener('touchstart', (e) => { e.preventDefault(); transmit(targetBtn, 'DOWN'); });
+            button.addEventListener('touchend', (e) => { e.preventDefault(); transmit(targetBtn, 'UP'); });
+            
+            button.addEventListener('mousedown', () => transmit(targetBtn, 'DOWN'));
+            button.addEventListener('mouseup', () => transmit(targetBtn, 'UP'));
+        });
+    </script>
+</body>
+</html>

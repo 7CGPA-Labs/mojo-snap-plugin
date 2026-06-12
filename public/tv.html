@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Retro Web Console - NES Mainframe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
+    <style>
+        body {
+            background-color: #0b0c10;
+            color: #66fcf1;
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-image: radial-gradient(#1f2833 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: #fff;
+            text-shadow: 0 0 10px #ff4a5a;
+            margin-bottom: 20px;
+        }
+
+        .console-container {
+            background: #1f2833;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+            border: 4px solid #45f3ff;
+        }
+
+        /* Scaled to display native 256x240 layout smoothly */
+        #nes-canvas {
+            width: 512px;
+            height: 480px; 
+            background: #000;
+            border: 4px solid #0f1115;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .status-bar {
+            margin-top: 20px;
+            font-size: 10px;
+            color: #ff4a5a;
+            text-shadow: 0 0 5px #ff4a5a;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>NES CONSOLE ENGINE</h1>
+    
+    <div class="console-container">
+        <canvas id="nes-canvas" width="256" height="240"></canvas>
+    </div>
+
+    <div class="status-bar" id="network-log">BOOT INTEGRATION INITIALIZED...</div>
+
+    <script>
+        const logDiv = document.getElementById('network-log');
+        const canvas = document.getElementById('nes-canvas');
+        
+        // Setup JSNES pipeline tracking and drawing loops
+        const ctx = canvas.getContext("2d");
+        const imageData = ctx.createImageData(256, 240);
+        const buf = new ArrayBuffer(imageData.data.length);
+        const buf8 = new Uint8ClampedArray(buf);
+        const buf32 = new Uint32Array(buf);
+
+        const nes = new jsnes.NES({
+            onFrame: (buffer) => {
+                let i = 0;
+                for (let y = 0; y < 240; y++) {
+                    for (let x = 0; x < 256; x++) {
+                        buf32[i] = buffer[i] | 0xff000000;
+                        i++;
+                    }
+                }
+                imageData.data.set(buf8);
+                ctx.putImageData(imageData, 0, 0);
+            }
+        });
+
+        // Translate network codes to JSNES controller memory bits
+        const nesButtonMap = {
+            'A': jsnes.Controller.BUTTON_A,         // Mario Jumps
+            'B': jsnes.Controller.BUTTON_B,         // Mario Runs / Attacks
+            'UP': jsnes.Controller.BUTTON_UP,
+            'DOWN': jsnes.Controller.BUTTON_DOWN,
+            'LEFT': jsnes.Controller.BUTTON_LEFT,
+            'RIGHT': jsnes.Controller.BUTTON_RIGHT
+        };
+
+        const socket = new WebSocket(`ws://${window.location.host}`);
+
+        socket.onopen = () => {
+            logDiv.innerText = "SYS STATUS: CONTROLLER BRIDGE CONNECTED.";
+            socket.send(JSON.stringify({ type: 'REGISTER_TV' }));
+            loadMarioROM();
+        };
+
+        socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            const targetButton = nesButtonMap[msg.button];
+            
+            if (targetButton !== undefined) {
+                if (msg.action === 'DOWN') {
+                    nes.buttonDown(1, targetButton);
+                } else {
+                    nes.buttonUp(1, targetButton);
+                }
+            }
+        };
+
+        function frameLoop() {
+            requestAnimationFrame(frameLoop);
+            nes.frame();
+        }
+
+        function loadMarioROM() {
+            logDiv.innerText = "RETRIEVING ARTIFACT: INTERCEPTING MARIO.NES...";
+            fetch('/mario.nes')
+                .then(response => {
+                    if (!response.ok) throw new Error("ROM data vector missing from /public folder.");
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    let bytes = new Uint8Array(buffer);
+                    let romData = "";
+                    for (let i = 0; i < bytes.length; i++) {
+                        romData += String.fromCharCode(bytes[i]);
+                    }
+                    nes.loadROM(romData);
+                    frameLoop();
+                    logDiv.innerText = "GAME SYSTEM RUNNING: SUPER MARIO BROS";
+                })
+                .catch(err => {
+                    logDiv.innerText = `FATAL EXCEPTION: ${err.message}`;
+                    console.error(err);
+                });
+        }
+    </script>
+</body>
+</html>
