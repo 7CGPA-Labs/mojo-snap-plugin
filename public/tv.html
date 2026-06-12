@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Retro Web Console - Dynamic Matrix</title>
+    <title>Retro Web Console - Sound Matrix</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -16,33 +16,31 @@
             display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 180px 1fr 140px;
             gap: 20px; width: 100%; height: 100%; max-width: 1400px; max-height: 850px;
         }
-        .panel {
-            background: #12131c; border: 3px solid #1f2235; border-radius: 8px;
-            padding: 15px; box-sizing: border-box; position: relative; overflow: hidden;
-        }
+        .panel { background: #12131c; border: 3px solid #1f2235; border-radius: 8px; padding: 15px; box-sizing: border-box; position: relative; overflow: hidden; }
         .panel-title { font-size: 10px; color: #4e5166; margin-bottom: 12px; text-transform: uppercase; }
         
-        /* Game Screen Sizing Configuration */
         .game-output-panel { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: #45f3ff; }
-        .canvas-frame { background: #000; border: 6px solid #090a0f; border-radius: 4px; }
+        .canvas-frame { background: #000; border: 6px solid #090a0f; border-radius: 4px; position: relative; }
         #nes-canvas { width: 640px; height: 600px; display: block; }
 
-        /* QR Frame Rendering Block */
+        /* Audio Unmute Overlay */
+        #audio-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(18, 19, 28, 0.95); z-index: 10;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; text-align: center; border-radius: 4px;
+        }
+        .audio-btn { background: #ff4a5a; color: #fff; font-family: 'Press Start 2P'; border: none; padding: 15px 25px; font-size: 12px; border-radius: 4px; box-shadow: 0 4px #b3303c; margin-top: 15px; }
+        
         .qr-panel { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: #ff4a5a; }
-        #qrcode-container { padding: 6px; background: #fff; border-radius: 4px; display: block; }
-        #qrcode-container img { display: block; }
-
-        /* Directory System Layout */
+        #qrcode-container { padding: 6px; background: #fff; border-radius: 4px; }
         .games-list-panel { grid-column: 2; grid-row: 2; }
-        .game-item { background: #1c1d2a; border: 2px solid #2d3047; padding: 12px; border-radius: 4px; font-size: 10px; color: #fff; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .game-item { background: #1c1d2a; border: 2px solid #2d3047; padding: 12px; border-radius: 4px; font-size: 10px; color: #fff; }
         .game-item.active { border-color: #00f2fe; color: #00f2fe; }
 
-        /* Real-time Connection Interceptor UI */
         .status-panel { grid-column: 2; grid-row: 3; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
         .player-status { font-size: 10px; display: flex; justify-content: space-between; align-items: center; }
         .status-indicator { width: 10px; height: 10px; border-radius: 50%; background: #2c1619; border: 2px solid #ff4a5a; }
-        
-        /* Active Connected Neon States */
         .status-indicator.online { background: #00f2fe; border-color: #45f3ff; box-shadow: 0 0 10px #00f2fe; }
         #sys-log { font-size: 8px; color: #4e5166; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
@@ -51,24 +49,28 @@
 
     <div class="workspace-grid">
         <div class="panel game-output-panel">
-            <div class="panel-title" style="align-self: flex-start;">[01] EMULATOR OUTPUT CONTAINER</div>
+            <div class="panel-title" style="align-self: flex-start;">[01] EMULATOR CONTAINER</div>
             <div class="canvas-frame">
+                <div id="audio-overlay" onclick="unlockAudioSystem()">
+                    <div style="font-size: 11px; color: #00f2fe;">AUDIO SYSTEM RESTRICTED</div>
+                    <button class="audio-btn">START EMULATION</button>
+                </div>
                 <canvas id="nes-canvas" width="256" height="240"></canvas>
             </div>
         </div>
 
         <div class="panel qr-panel">
-            <div class="panel-title">[02] DYNAMIC QR ACCESS PORT</div>
+            <div class="panel-title">[02] DISCOVERY ENTRY</div>
             <div id="qrcode-container"></div>
         </div>
 
         <div class="panel games-list-panel">
-            <div class="panel-title">[03] AVAILABILITY INVENTORY</div>
-            <div class="game-item active"><span>▶</span><span>mario.nes</span></div>
+            <div class="panel-title">[03] REPOSITORY MATRIX</div>
+            <div class="game-item active"><span>▶ </span><span>mario.nes</span></div>
         </div>
 
         <div class="panel status-panel">
-            <div class="panel-title">[04] CONNECTION MATRIX SLOTS</div>
+            <div class="panel-title">[04] OPERATING CONTROLLER REGISTRY</div>
             <div class="player-status">
                 <span>P1: <span id="p1-name" style="color:#ff4a5a;">OFFLINE</span></span>
                 <div class="status-indicator" id="p1-indicator"></div>
@@ -77,7 +79,7 @@
                 <span>P2: <span id="p2-name" style="color:#ff4a5a;">OFFLINE</span></span>
                 <div class="status-indicator" id="p2-indicator"></div>
             </div>
-            <div id="sys-log">SYS: CONNECTING CORE HOST...</div>
+            <div id="sys-log">SYS: SYSTEM ACTIVE.</div>
         </div>
     </div>
 
@@ -85,7 +87,32 @@
         const logDiv = document.getElementById('sys-log');
         const canvas = document.getElementById('nes-canvas');
         
-        // JSNES Buffer Allocation Blueprint
+        // 1. Core Web Audio Architecture Pipeline Definitions
+        let audioContext = null;
+        let audioSamplesBuffer = [];
+        const BUFFER_LIMIT = 4096;
+
+        function initializeAudioStack() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+            
+            // Allocate a legacy node architecture to process direct emulation audio sample arrays
+            const scriptProcessor = audioContext.createScriptProcessor(2048, 0, 1);
+            scriptProcessor.onaudioprocess = (e) => {
+                const outputChannel = e.outputBuffer.getChannelData(0);
+                for (let i = 0; i < outputChannel.length; i++) {
+                    outputChannel[i] = audioSamplesBuffer.shift() || 0.0;
+                }
+            };
+            scriptProcessor.connect(audioContext.destination);
+        }
+
+        function unlockAudioSystem() {
+            initializeAudioStack();
+            document.getElementById('audio-overlay').style.display = 'none';
+            loadMarioROM();
+        }
+
+        // 2. JSNES Engine Integration
         const ctx = canvas.getContext("2d");
         const imageData = ctx.createImageData(256, 240);
         const buf = new ArrayBuffer(imageData.data.length);
@@ -101,6 +128,13 @@
                     }
                 }
                 imageData.data.set(buf8); ctx.putImageData(imageData, 0, 0);
+            },
+            // Pipe output audio sample bits straight into processing ring buffer array
+            onAudioSample: (left, right) => {
+                if (audioContext) {
+                    audioSamplesBuffer.push(left);
+                    if (audioSamplesBuffer.length > BUFFER_LIMIT) audioSamplesBuffer.shift();
+                }
             }
         });
 
@@ -111,70 +145,53 @@
         };
 
         const socket = new WebSocket(`ws://${window.location.host}`);
-
-        socket.onopen = () => {
-            socket.send(JSON.stringify({ type: 'REGISTER_TV' }));
-        };
+        socket.onopen = () => socket.send(JSON.stringify({ type: 'REGISTER_TV' }));
 
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
 
-            // Interface Frame Routing A: Extract Server Network Address Parameters & Build QR
             if (msg.type === 'SYSTEM_CONFIG') {
-                document.getElementById("qrcode-container").innerHTML = ""; // Clear loader stub
+                document.getElementById("qrcode-container").innerHTML = "";
                 new QRCode(document.getElementById("qrcode-container"), {
-                    text: msg.connectUrl,
-                    width: 100, height: 100,
-                    correctLevel: QRCode.CorrectLevel.H
+                    text: msg.connectUrl, width: 100, height: 100
                 });
-                logDiv.innerText = `SYS: Target link initialized -> ${msg.connectUrl}`;
-                loadMarioROM();
             }
 
-            // Interface Frame Routing B: Update Connection Indicators in Real-Time
             if (msg.type === 'PLAYER_STATUS_UPDATE') {
-                const p1Ind = document.getElementById('p1-indicator');
-                const p1Txt = document.getElementById('p1-name');
-                const p2Ind = document.getElementById('p2-indicator');
-                const p2Txt = document.getElementById('p2-name');
-
-                if (msg.p1Connected) {
-                    p1Ind.classList.add('online'); p1Txt.innerText = "CONNECTED (PHONE)"; p1Txt.style.color = "#00f2fe";
-                } else {
-                    p1Ind.classList.remove('online'); p1Txt.innerText = "OFFLINE"; p1Txt.style.color = "#ff4a5a";
-                }
-
-                if (msg.p2Connected) {
-                    p2Ind.classList.add('online'); p2Txt.innerText = "CONNECTED (PHONE)"; p2Txt.style.color = "#00f2fe";
-                } else {
-                    p2Ind.classList.remove('online'); p2Txt.innerText = "OFFLINE"; p2Txt.style.color = "#ff4a5a";
-                }
+                updateUIField('p1-indicator', 'p1-name', msg.p1Connected, msg.p1Name);
+                updateUIField('p2-indicator', 'p2-name', msg.p2Connected, msg.p2Name);
             }
 
-            // Interface Frame Routing C: Input Mapping Commands Passed into Core Execution Port 1
             if (msg.button !== undefined) {
                 const targetButton = nesButtonMap[msg.button];
                 if (targetButton !== undefined) {
-                    if (msg.action === 'DOWN') {
-                        nes.buttonDown(1, targetButton);
-                    } else {
-                        nes.buttonUp(1, targetButton);
-                    }
+                    if (msg.action === 'DOWN') nes.buttonDown(1, targetButton);
+                    else nes.buttonUp(1, targetButton);
                 }
             }
         };
+
+        function updateUIField(indId, textId, active, handle) {
+            const ind = document.getElementById(indId);
+            const txt = document.getElementById(textId);
+            if (active) {
+                ind.classList.add('online'); txt.innerText = handle; txt.style.color = "#00f2fe";
+            } else {
+                ind.classList.remove('online'); txt.innerText = "OFFLINE"; txt.style.color = "#ff4a5a";
+            }
+        }
 
         function frameLoop() { requestAnimationFrame(frameLoop); nes.frame(); }
 
         function loadMarioROM() {
             fetch('/mario.nes')
-                .then(res => { if (!res.ok) throw new Error(); return res.arrayBuffer(); })
+                .then(res => res.arrayBuffer())
                 .then(buffer => {
                     let bytes = new Uint8Array(buffer); let romData = "";
                     for (let i = 0; i < bytes.length; i++) { romData += String.fromCharCode(bytes[i]); }
                     nes.loadROM(romData); frameLoop();
-                    logDiv.innerText = "SYS: ACTIVE GAMEWAY RUNNING -> MARIO";
-                }).catch(() => { logDiv.innerText = "FATAL: PLACE MARIO.NES INTO PUBLIC DIR"; });
+                    logDiv.innerText = "SYS: CHANNELS BOOTED WITH AUDIO ENABLED.";
+                });
         }
     </script>
 </body>

@@ -7,74 +7,162 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #12131c; margin: 0; padding: 40px;
+            background-color: #12131c; margin: 0; padding: 0;
             user-select: none; -webkit-user-select: none;
             font-family: 'Press Start 2P', sans-serif; height: 100vh;
-            display: flex; justify-content: space-between; align-items: center;
-            box-sizing: border-box; overflow: hidden;
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
-        .dpad-container { display: grid; grid-template-columns: repeat(3, 75px); grid-template-rows: repeat(3, 75px); background: #1f2029; padding: 10px; border-radius: 50%; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
-        .d-btn { background: #3a3c4d; border: 2px solid #12131c; color: #00f2fe; font-size: 20px; display: flex; align-items: center; justify-content: center; border-radius: 8px; box-shadow: 0 4px #22232e; }
-        .d-btn:active { background: #00f2fe; color: #12131c; transform: translateY(2px); box-shadow: none; }
+        
+        #gateway-panel {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #1f2029; padding: 30px; border-radius: 8px; border: 3px solid #ff4a5a;
+        }
+        #gateway-panel h2 { font-size: 12px; color: #fff; margin-bottom: 20px; }
+        .input-box { background: #12131c; border: 2px solid #3a3c4d; padding: 12px; color: #00f2fe; font-family: 'Press Start 2P'; font-size: 12px; text-align: center; width: 180px; margin-bottom: 20px; border-radius: 4px; text-transform: uppercase; }
+        .join-btn { background: #00f2fe; color: #12131c; border: none; padding: 12px 20px; font-family: 'Press Start 2P'; font-size: 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
+        /* Fullscreen Landscape Layout Master Matrix */
+        #gamepad-panel {
+            width: 100vw; height: 100vh; display: none;
+            justify-content: space-between; align-items: center; box-sizing: border-box; padding: 40px;
+        }
+        .dpad-container { display: grid; grid-template-columns: repeat(3, 75px); grid-template-rows: repeat(3, 75px); background: #1f2029; padding: 10px; border-radius: 50%; }
+        
+        /* Direct touch interactions bypass element tracking; CSS triggers handled programmatically */
+        .d-btn { background: #3a3c4d; border: 2px solid #12131c; color: #00f2fe; font-size: 20px; display: flex; align-items: center; justify-content: center; border-radius: 8px; pointer-events: none; }
         .up { grid-column: 2; grid-row: 1; border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
         .left { grid-column: 1; grid-row: 2; border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .right { grid-column: 3; grid-row: 2; border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0; }
         .down { grid-column: 2; grid-row: 3; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+        
         .action-deck { display: flex; gap: 25px; transform: rotate(-15deg); }
-        .act-btn { width: 85px; height: 85px; border-radius: 50%; background: #ff4a5a; color: #fff; border: 4px solid #12131c; font-size: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 0 #b3303c; }
-        .act-btn:active { background: #ff7380; transform: translateY(4px); box-shadow: none; }
-        #brand { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 8px; color: #4e5166; text-transform: uppercase; }
+        .act-btn { width: 85px; height: 85px; border-radius: 50%; background: #ff4a5a; color: #fff; border: 4px solid #12131c; font-size: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        
+        /* Active touch visual indicators */
+        .d-btn.pressed-state { background: #00f2fe; color: #12131c; }
+        .act-btn.pressed-state { background: #ff7380; transform: scale(0.95); }
+
+        #brand { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 8px; color: #4e5166; }
     </style>
 </head>
 <body>
 
-    <div class="dpad-container">
-        <button class="d-btn up" data-btn="UP">▲</button>
-        <button class="d-btn left" data-btn="LEFT">◀</button>
-        <button class="d-btn right" data-btn="RIGHT">▶</button>
-        <button class="d-btn down" data-btn="DOWN">▼</button>
+    <div id="gateway-panel">
+        <h2>ENTER PLAYER HANDLE</h2>
+        <input type="text" id="nickname-input" class="input-box" maxlength="8" placeholder="NICKNAME" autocomplete="off">
+        <button class="join-btn" onclick="submitRegistration()">LINK STATION</button>
     </div>
 
-    <div class="action-deck">
-        <button class="act-btn" data-btn="B">B</button>
-        <button class="act-btn" data-btn="A">A</button>
+    <div id="gamepad-panel">
+        <div class="dpad-container">
+            <button class="d-btn up" data-btn="UP">▲</button>
+            <button class="d-btn left" data-btn="LEFT">◀</button>
+            <button class="d-btn right" data-btn="RIGHT">▶</button>
+            <button class="d-btn down" data-btn="DOWN">▼</button>
+        </div>
+
+        <div class="action-deck">
+            <button class="act-btn" data-btn="B">B</button>
+            <button class="act-btn" data-btn="A">A</button>
+        </div>
     </div>
 
-    <div id="brand">CONNECTING FRAME PIPELINE...</div>
+    <div id="brand">MATRIX LINK SYSTEM</div>
 
     <script>
         const socket = new WebSocket(`ws://${window.location.host}`);
-        const brand = document.getElementById('brand');
+        const brandLabel = document.getElementById('brand');
+        let structuralButtons = {};
 
-        socket.onopen = () => {
-            // Instantly ping the server to secure a player slot position
-            socket.send(JSON.stringify({ type: 'REGISTER_CONTROLLER' }));
-        };
+        function submitRegistration() {
+            const nickField = document.getElementById('nickname-input');
+            
+            // Trigger browser full-screen mechanics safely via explicit click gesture
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
+
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => console.log("Orientation lock handled."));
+            }
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'REGISTER_CONTROLLER', nickname: nickField.value }));
+            }
+        }
 
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             if (msg.type === 'ASSIGNMENT_CONFIRM') {
-                brand.innerText = `LINK NODE SECURED: ${msg.slot}`;
+                document.getElementById('gateway-panel').style.display = 'none';
+                document.getElementById('gamepad-panel').style.display = 'flex';
+                brandLabel.innerText = `LATCHED: ${msg.slot}`;
+                
+                // Map bounding calculations after interface rendering stabilizes
+                setTimeout(recalculateButtonCoordinates, 200);
             }
         };
 
-        function transmit(buttonName, state) {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: 'CONTROLLER_INPUT',
-                    button: buttonName,
-                    action: state
-                }));
+        function recalculateButtonCoordinates() {
+            structuralButtons = {};
+            document.querySelectorAll('#gamepad-panel button').forEach(btn => {
+                const name = btn.getAttribute('data-btn');
+                structuralButtons[name] = {
+                    rect: btn.getBoundingClientRect(),
+                    pressed: false,
+                    element: btn
+                };
+            });
+        }
+
+        // Bounding-Box Multi-Touch Parser Loop Engine
+        function parseTouchEngine(e) {
+            e.preventDefault();
+            const activeFingersThisFrame = new Set();
+
+            // Intercept positions for all fingers currently touching the display panel
+            for (let i = 0; i < e.touches.length; i++) {
+                const t = e.touches[i];
+                
+                for (const name in structuralButtons) {
+                    const b = structuralButtons[name];
+                    if (t.clientX >= b.rect.left && t.clientX <= b.rect.right &&
+                        t.clientY >= b.rect.top && t.clientY <= b.rect.bottom) {
+                        activeFingersThisFrame.add(name);
+                    }
+                }
+            }
+
+            // Sync structural signal changes down the WebSocket connection frame
+            for (const name in structuralButtons) {
+                const b = structuralButtons[name];
+                const activeNow = activeFingersThisFrame.has(name);
+
+                if (activeNow && !b.pressed) {
+                    b.pressed = true;
+                    b.element.classList.add('pressed-state');
+                    transmit(name, 'DOWN');
+                } else if (!activeNow && b.pressed) {
+                    b.pressed = false;
+                    b.element.classList.remove('pressed-state');
+                    transmit(name, 'UP');
+                }
             }
         }
 
-        document.querySelectorAll('button').forEach(button => {
-            const targetBtn = button.getAttribute('data-btn');
-            button.addEventListener('touchstart', (e) => { e.preventDefault(); transmit(targetBtn, 'DOWN'); });
-            button.addEventListener('touchend', (e) => { e.preventDefault(); transmit(targetBtn, 'UP'); });
-            button.addEventListener('mousedown', () => transmit(targetBtn, 'DOWN'));
-            button.addEventListener('mouseup', () => transmit(targetBtn, 'UP'));
-        });
+        function transmit(buttonName, state) {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'CONTROLLER_INPUT', button: buttonName, action: state }));
+            }
+        }
+
+        // Capture multi-finger interactions globally across the interface canvas
+        const pad = document.getElementById('gamepad-panel');
+        pad.addEventListener('touchstart', parseTouchEngine, { passive: false });
+        pad.addEventListener('touchmove', parseTouchEngine, { passive: false });
+        pad.addEventListener('touchend', parseTouchEngine, { passive: false });
+        pad.addEventListener('touchcancel', parseTouchEngine, { passive: false });
+
+        window.addEventListener('resize', recalculateButtonCoordinates);
     </script>
 </body>
 </html>

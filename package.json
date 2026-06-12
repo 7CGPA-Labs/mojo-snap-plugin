@@ -5,6 +5,8 @@
   "main": "server.js",
   "dependencies": {
     "express": "^4.19.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "jsnes": "^1.2.1",
+    "qrcode": "^1.0.0"
   }
 }
