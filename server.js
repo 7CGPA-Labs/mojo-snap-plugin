@@ -4,22 +4,82 @@ import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import fs from 'fs/promises';
+import QRCode from 'qrcode';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
+// Add HTTP Request Logging
+app.use((req, res, next) => {
+    console.log(`🌐 [HTTP] ${req.method} ${req.url}`);
+    next();
+});
+
 // Serve static assets out of your public workspace directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// PRODUCTION FIX: Route local npm packages directly to prevent CDN dependencies
-app.use('/js/jsnes', express.static(path.join(__dirname, 'node_modules/jsnes/dist')));
-app.use('/js/qrcode', express.static(path.join(__dirname, 'node_modules/qrcode/build')));
+// Map local node_modules packages to avoid CDN dependencies
+app.use('/fonts/press-start-2p', express.static(path.join(__dirname, 'node_modules/@fontsource/press-start-2p')));
+
+// Solve Error 3: Handle favicon.ico requests to prevent 404
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// MODULE 2: Dynamic ROM Folder Scanning API
+app.get('/api/games', async (req, res) => {
+    console.log(`📂 [API] Scanning ROM directories...`);
+    const romsDir = path.join(__dirname, 'public', 'roms');
+    const gamesList = [];
+    
+    try {
+        const consoles = await fs.readdir(romsDir, { withFileTypes: true });
+        for (const consoleDir of consoles) {
+            if (consoleDir.isDirectory()) {
+                const consolePath = path.join(romsDir, consoleDir.name);
+                const files = await fs.readdir(consolePath);
+                
+                // Process playable files, ignoring hidden system files and metadata jsons
+                const roms = files.filter(f => !f.startsWith('.') && !f.endsWith('.json'));
+                
+                for (const rom of roms) {
+                    const baseName = rom.replace(/\.[^/.]+$/, "");
+                    const jsonName = `${baseName}.json`;
+                    let meta = {};
+
+                    // Scan for adjacent metadata .json file of the exact same name
+                    if (files.includes(jsonName)) {
+                        try {
+                            const jsonContent = await fs.readFile(path.join(consolePath, jsonName), 'utf-8');
+                            meta = JSON.parse(jsonContent);
+                        } catch (err) {
+                            console.error(`Failed to parse metadata for ${rom}:`, err);
+                        }
+                    }
+
+                    gamesList.push({
+                        console: meta.console || consoleDir.name.toUpperCase(),
+                        filename: rom,
+                        path: `/roms/${consoleDir.name}/${rom}`,
+                        title: meta.title || baseName,
+                        description: meta.description || 'No description available.',
+                        release: meta.release || 'Unknown'
+                    });
+                }
+            }
+        }
+        res.json(gamesList);
+    } catch (error) {
+        if (error.code === 'ENOENT') res.json([]);
+        else res.status(500).json({ error: 'Failed to scan ROMs directory' });
+    }
+});
 
 let tvSocket = null;
 let p1Socket = null;
 let p2Socket = null;
+let tvState = 'LOBBY';
 
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
@@ -52,12 +112,20 @@ function dispatchPlayerStatusToTV() {
 }
 
 wss.on('connection', (socket) => {
-    socket.on('message', (message) => {
+    console.log(`⚡ [WEBSOCKET] New client connection established.`);
+
+    socket.on('message', async (message) => {
         const data = JSON.parse(message);
 
         if (data.type === 'REGISTER_TV') {
+            console.log(`📺 [WEBSOCKET] TV Display registered.`);
             tvSocket = socket;
-            tvSocket.send(JSON.stringify({ type: 'SYSTEM_CONFIG', connectUrl: CONTROLLER_URL }));
+            try {
+                const qrDataUrl = await QRCode.toDataURL(CONTROLLER_URL, { width: 130, margin: 2 });
+                tvSocket.send(JSON.stringify({ type: 'SYSTEM_CONFIG', connectUrl: CONTROLLER_URL, qrDataUrl }));
+            } catch (err) {
+                console.error("QR Code Generation Error:", err);
+            }
             dispatchPlayerStatusToTV();
         }
 
@@ -68,30 +136,60 @@ wss.on('connection', (socket) => {
                 p1Socket = socket;
                 socket.nickname = chosenName || 'PLAYER 1';
                 socket.send(JSON.stringify({ type: 'ASSIGNMENT_CONFIRM', slot: socket.nickname }));
+                socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: tvState }));
                 console.log(`📱 ${socket.nickname} claimed Player 1 Slot.`);
             } else if (!p2Socket) {
                 p2Socket = socket;
                 socket.nickname = chosenName || 'PLAYER 2';
                 socket.send(JSON.stringify({ type: 'ASSIGNMENT_CONFIRM', slot: socket.nickname }));
+                socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: tvState }));
                 console.log(`📱 ${socket.nickname} claimed Player 2 Slot.`);
             } else {
                 socket.send(JSON.stringify({ type: 'ASSIGNMENT_CONFIRM', slot: 'SPECTATOR' }));
+                socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: tvState }));
             }
             dispatchPlayerStatusToTV();
         }
 
+        if (data.type === 'TV_STATE_CHANGE' && socket === tvSocket) {
+            tvState = data.state;
+            console.log(`📺 [WEBSOCKET] TV State Changed: ${data.state}`);
+            // Broadcast TV state back to connected controllers
+            const stateMsg = JSON.stringify(data);
+            if (p1Socket) p1Socket.send(stateMsg);
+            if (p2Socket) p2Socket.send(stateMsg);
+        }
+
         if (data.type === 'CONTROLLER_INPUT' && tvSocket) {
-            tvSocket.send(JSON.stringify({
-                button: data.button,
-                action: data.action
-            }));
+            // MODULE 4: Player 2 Input Routing Matrix
+            let playerId = null;
+            if (socket === p1Socket) playerId = 1;
+            else if (socket === p2Socket) playerId = 2;
+            
+            if (playerId !== null) {
+                console.log(`🔀 [ROUTER] Forwarding P${playerId} Input: ${data.button} ${data.action}`);
+                tvSocket.send(JSON.stringify({
+                    player: playerId,
+                    button: data.button,
+                    action: data.action
+                }));
+            } else {
+                console.log(`⚠️ [ROUTER] Ignored input from unassigned or spectator socket.`);
+            }
         }
     });
 
     socket.on('close', () => {
-        if (socket === tvSocket) tvSocket = null;
-        if (socket === p1Socket) p1Socket = null;
-        if (socket === p2Socket) p2Socket = null;
+        if (socket === tvSocket) {
+            console.log(`🔌 [WEBSOCKET] TV Display disconnected.`);
+            tvSocket = null;
+        } else if (socket === p1Socket) {
+            console.log(`🔌 [WEBSOCKET] ${p1Socket.nickname} disconnected from Player 1.`);
+            p1Socket = null;
+        } else if (socket === p2Socket) {
+            console.log(`🔌 [WEBSOCKET] ${p2Socket.nickname} disconnected from Player 2.`);
+            p2Socket = null;
+        }
         dispatchPlayerStatusToTV();
     });
 });

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Arcade Gamepad Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="/fonts/press-start-2p/index.css" rel="stylesheet">
     <style>
         body {
             background-color: #12131c; margin: 0; padding: 0;
@@ -42,6 +42,13 @@
         .d-btn.pressed-state { background: #00f2fe; color: #12131c; }
         .act-btn.pressed-state { background: #ff7380; transform: scale(0.95); }
 
+        .center-deck { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; }
+        .sys-btn { background: #1f2029; border: 2px solid #3a3c4d; color: #fff; padding: 10px 15px; border-radius: 8px; font-family: 'Press Start 2P'; font-size: 10px; pointer-events: none; }
+        .sys-btn.pressed-state { background: #00f2fe; color: #12131c; border-color: #00f2fe; }
+
+        #disconnect-btn { position: absolute; top: 15px; right: 20px; background: transparent; border: 2px solid #ff4a5a; color: #ff4a5a; font-family: 'Press Start 2P'; font-size: 8px; padding: 8px; border-radius: 4px; z-index: 100; cursor: pointer; }
+        #disconnect-btn:active { background: #ff4a5a; color: #12131c; }
+
         #brand { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 8px; color: #4e5166; }
     </style>
 </head>
@@ -54,11 +61,23 @@
     </div>
 
     <div id="gamepad-panel">
+        <button id="disconnect-btn" onclick="disconnectController()">DISCONNECT</button>
+        
+        <div id="lobby-overlay" style="display: none; position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(18,19,28,0.92); z-index: 50; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+            <div style="color: #00f2fe; font-size: 14px; margin-bottom: 12px;">LOBBY LINKED</div>
+            <div style="color: #8e92a8; font-size: 8px; line-height: 1.5;">WAITING FOR TV SELECTION...</div>
+        </div>
+
         <div class="dpad-container">
             <button class="d-btn up" data-btn="UP">▲</button>
             <button class="d-btn left" data-btn="LEFT">◀</button>
             <button class="d-btn right" data-btn="RIGHT">▶</button>
             <button class="d-btn down" data-btn="DOWN">▼</button>
+        </div>
+
+        <div class="center-deck">
+            <button class="sys-btn" data-btn="SELECT">SELECT</button>
+            <button class="sys-btn" data-btn="START">START</button>
         </div>
 
         <div class="action-deck">
@@ -73,6 +92,25 @@
         const socket = new WebSocket(`ws://${window.location.host}`);
         const brandLabel = document.getElementById('brand');
         let structuralButtons = {};
+        let wakeLock = null;
+
+        // Request the browser to keep the screen awake
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock acquired');
+                } catch (err) {
+                    console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock(); // Re-request when returning to the app
+            }
+        });
 
         function submitRegistration() {
             const nickField = document.getElementById('nickname-input');
@@ -85,9 +123,21 @@
                 screen.orientation.lock('landscape').catch(() => console.log("Orientation lock handled."));
             }
 
+            requestWakeLock();
+
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({ type: 'REGISTER_CONTROLLER', nickname: nickField.value }));
             }
+        }
+
+        function disconnectController() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => wakeLock = null);
+            }
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                socket.close();
+            }
+            window.location.reload(); // Clean reset back to the gateway screen
         }
 
         socket.onmessage = (event) => {
@@ -97,8 +147,21 @@
                 document.getElementById('gamepad-panel').style.display = 'flex';
                 brandLabel.innerText = `LATCHED: ${msg.slot}`;
                 
+                document.getElementById('lobby-overlay').style.display = 'flex'; // Default to lobby barrier on connect
+                
+                if (msg.slot === 'SPECTATOR') {
+                    document.getElementById('lobby-overlay').innerHTML = '<div style="color: #ff4a5a; font-size: 14px; margin-bottom: 12px;">SPECTATOR MODE</div><div style="color: #8e92a8; font-size: 8px; line-height: 1.5;">MAX PLAYERS REACHED. INPUTS DISABLED.</div>';
+                }
                 // Map bounding calculations after interface rendering stabilizes
                 setTimeout(recalculateButtonCoordinates, 200);
+            }
+            
+            if (msg.type === 'TV_STATE_CHANGE') {
+                if (msg.state === 'GAMEPLAY') {
+                    if (brandLabel.innerText !== 'LATCHED: SPECTATOR') document.getElementById('lobby-overlay').style.display = 'none';
+                } else {
+                    document.getElementById('lobby-overlay').style.display = 'flex';
+                }
             }
         };
 
@@ -150,6 +213,7 @@
         }
 
         function transmit(buttonName, state) {
+            console.log(`[CONTROLLER] Sending: ${buttonName} -> ${state}`);
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({ type: 'CONTROLLER_INPUT', button: buttonName, action: state }));
             }

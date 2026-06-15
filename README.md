@@ -13,6 +13,7 @@ retro-web-console/
 └── public/
     ├── tv.html
     ├── controller.html
+    ├── emulatorjs/      <-- Extracted offline emulator files
     └── mario.nes        <-- Copy your game file here!
 
 ```
@@ -28,7 +29,7 @@ retro-web-console/
 Open a terminal in the root folder and run:
 
 ```bash
-npm install
+npm install express ws qrcode emulatorjs @fontsource/press-start-2p
 node server.js
 ```
 

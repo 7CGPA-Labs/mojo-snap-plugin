@@ -3,15 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Retro Web Console - Sound Matrix</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="/fonts/press-start-2p/index.css" rel="stylesheet">
     <style>
         body {
             background-color: #08090d; color: #66fcf1; font-family: 'Press Start 2P', monospace;
             margin: 0; padding: 20px; height: 100vh; box-sizing: border-box;
             display: flex; align-items: center; justify-content: center;
         }
+        
+        /* FSM Input Lock Overlay */
+        body.gameplay-active { pointer-events: none; }
+        #exit-btn { display: none; position: absolute; top: 20px; right: 20px; z-index: 1000; background: rgba(255, 74, 90, 0.1); border: 2px solid #ff4a5a; color: #ff4a5a; font-family: 'Press Start 2P'; font-size: 10px; padding: 12px; cursor: pointer; pointer-events: auto; border-radius: 4px; backdrop-filter: blur(4px); transition: 0.2s; }
+        #exit-btn:hover { background: #ff4a5a; color: #12131c; }
+        
+        #pause-btn { display: none; position: absolute; top: 20px; right: 150px; z-index: 1000; background: rgba(0, 242, 254, 0.1); border: 2px solid #00f2fe; color: #00f2fe; font-family: 'Press Start 2P'; font-size: 10px; padding: 12px; cursor: pointer; pointer-events: auto; border-radius: 4px; backdrop-filter: blur(4px); transition: 0.2s; }
+        #pause-btn:hover { background: #00f2fe; color: #12131c; }
+
         .workspace-grid {
             display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 180px 1fr 140px;
             gap: 20px; width: 100%; height: 100%; max-width: 1400px; max-height: 850px;
@@ -20,23 +27,28 @@
         .panel-title { font-size: 10px; color: #4e5166; margin-bottom: 12px; text-transform: uppercase; }
         
         .game-output-panel { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: #45f3ff; }
-        .canvas-frame { background: #000; border: 6px solid #090a0f; border-radius: 4px; position: relative; }
-        #nes-canvas { width: 640px; height: 600px; display: block; }
+        .canvas-frame { background: #000; border: 6px solid #090a0f; border-radius: 4px; position: relative; width: 100%; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; box-sizing: border-box; }
+        #emulator-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        #game-div { width: 100%; height: 100%; }
+        #game-div canvas { width: 100% !important; height: 100% !important; object-fit: fill !important; }
 
-        /* Audio Unmute Overlay */
-        #audio-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(18, 19, 28, 0.95); z-index: 10;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; text-align: center; border-radius: 4px;
-        }
-        .audio-btn { background: #ff4a5a; color: #fff; font-family: 'Press Start 2P'; border: none; padding: 15px 25px; font-size: 12px; border-radius: 4px; box-shadow: 0 4px #b3303c; margin-top: 15px; }
-        
         .qr-panel { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: #ff4a5a; }
         #qrcode-container { padding: 6px; background: #fff; border-radius: 4px; }
-        .games-list-panel { grid-column: 2; grid-row: 2; }
-        .game-item { background: #1c1d2a; border: 2px solid #2d3047; padding: 12px; border-radius: 4px; font-size: 10px; color: #fff; }
-        .game-item.active { border-color: #00f2fe; color: #00f2fe; }
+        
+        /* Dynamic Console Directory List Styling */
+        .games-list-panel { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; }
+        .tabs-container { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; border-bottom: 2px solid #2d3047; }
+        .tab-btn { background: transparent; border: 1px solid #2d3047; color: #4e5166; font-family: 'Press Start 2P'; font-size: 8px; padding: 8px 10px; cursor: pointer; border-radius: 4px; }
+        .tab-btn.active { background: #00f2fe; color: #12131c; border-color: #00f2fe; }
+        
+        .game-list-viewport { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .game-item { background: #1c1d2a; border: 2px solid transparent; padding: 10px; border-radius: 4px; font-size: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; transition: 0.1s; }
+        .game-item:hover { border-color: #00f2fe; color: #00f2fe; transform: translateX(4px); }
+        
+        .meta-panel { background: #090a0f; padding: 12px; border-radius: 4px; border: 1px solid #1f2235; min-height: 85px; }
+        #meta-title { color: #00f2fe; font-size: 10px; margin-bottom: 8px; }
+        #meta-console { color: #ff4a5a; font-size: 8px; margin-bottom: 8px; }
+        #meta-desc { color: #8e92a8; font-size: 8px; line-height: 1.5; height: 35px; overflow-y: hidden; }
 
         .status-panel { grid-column: 2; grid-row: 3; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
         .player-status { font-size: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -47,15 +59,14 @@
 </head>
 <body>
 
+    <button id="exit-btn" onclick="ApplicationState.exitGameplay()" onmousedown="event.preventDefault()">[EXIT GAME]</button>
+    <button id="pause-btn" onclick="ApplicationState.togglePause()" onmousedown="event.preventDefault()">[PAUSE]</button>
+
     <div class="workspace-grid">
         <div class="panel game-output-panel">
             <div class="panel-title" style="align-self: flex-start;">[01] EMULATOR CONTAINER</div>
             <div class="canvas-frame">
-                <div id="audio-overlay" onclick="unlockAudioSystem()">
-                    <div style="font-size: 11px; color: #00f2fe;">AUDIO SYSTEM RESTRICTED</div>
-                    <button class="audio-btn">START EMULATION</button>
-                </div>
-                <canvas id="nes-canvas" width="256" height="240"></canvas>
+                <div id="emulator-container"></div>
             </div>
         </div>
 
@@ -66,7 +77,13 @@
 
         <div class="panel games-list-panel">
             <div class="panel-title">[03] REPOSITORY MATRIX</div>
-            <div class="game-item active"><span>▶ </span><span>mario.nes</span></div>
+            <div class="tabs-container" id="console-tabs"></div>
+            <div class="game-list-viewport" id="game-list"></div>
+            <div class="meta-panel">
+                <div id="meta-title">SYSTEM READY</div>
+                <div id="meta-console">WAITING FOR SELECTION</div>
+                <div id="meta-desc">Hover over a game entry to load configurations...</div>
+            </div>
         </div>
 
         <div class="panel status-panel">
@@ -85,64 +102,146 @@
 
     <script>
         const logDiv = document.getElementById('sys-log');
-        const canvas = document.getElementById('nes-canvas');
+        let libraryData = [];
         
-        // 1. Core Web Audio Architecture Pipeline Definitions
-        let audioContext = null;
-        let audioSamplesBuffer = [];
-        const BUFFER_LIMIT = 4096;
-
-        function initializeAudioStack() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+        // FSM: The Application State Arbitrator
+        const ApplicationState = {
+            current: 'LOBBY', // 'LOBBY' | 'GAMEPLAY'
+            isPaused: false,
             
-            // Allocate a legacy node architecture to process direct emulation audio sample arrays
-            const scriptProcessor = audioContext.createScriptProcessor(2048, 0, 1);
-            scriptProcessor.onaudioprocess = (e) => {
-                const outputChannel = e.outputBuffer.getChannelData(0);
-                for (let i = 0; i < outputChannel.length; i++) {
-                    outputChannel[i] = audioSamplesBuffer.shift() || 0.0;
-                }
-            };
-            scriptProcessor.connect(audioContext.destination);
-        }
-
-        function unlockAudioSystem() {
-            initializeAudioStack();
-            document.getElementById('audio-overlay').style.display = 'none';
-            loadMarioROM();
-        }
-
-        // 2. JSNES Engine Integration
-        const ctx = canvas.getContext("2d");
-        const imageData = ctx.createImageData(256, 240);
-        const buf = new ArrayBuffer(imageData.data.length);
-        const buf8 = new Uint8ClampedArray(buf);
-        const buf32 = new Uint32Array(buf);
-
-        const nes = new jsnes.NES({
-            onFrame: (buffer) => {
-                let i = 0;
-                for (let y = 0; y < 240; y++) {
-                    for (let x = 0; x < 256; x++) {
-                        buf32[i] = buffer[i] | 0xff000000; i++;
-                    }
-                }
-                imageData.data.set(buf8); ctx.putImageData(imageData, 0, 0);
+            enterGameplay: async function(game) {
+                this.current = 'GAMEPLAY';
+                this.isPaused = false;
+                document.body.classList.add('gameplay-active'); // Locks out global mouse inputs
+                document.getElementById('exit-btn').style.display = 'block';
+                document.getElementById('pause-btn').style.display = 'block';
+                document.getElementById('pause-btn').innerText = '[PAUSE]';
+                
+                socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: 'GAMEPLAY' }));
+                logDiv.innerText = `SYS: LAUNCHING ${game.console} KERNEL...`;
+                
+                loadROM(game);
             },
-            // Pipe output audio sample bits straight into processing ring buffer array
-            onAudioSample: (left, right) => {
-                if (audioContext) {
-                    audioSamplesBuffer.push(left);
-                    if (audioSamplesBuffer.length > BUFFER_LIMIT) audioSamplesBuffer.shift();
+
+            exitGameplay: function() {
+                this.current = 'LOBBY';
+                document.body.classList.remove('gameplay-active'); // Restores LG Magic Remote UI
+                document.getElementById('exit-btn').style.display = 'none';
+                document.getElementById('pause-btn').style.display = 'none';
+                
+                // Clear EmulatorJS Container entirely to kill the emulator lifecycle
+                document.getElementById('emulator-container').innerHTML = '';
+                
+                socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: 'LOBBY' }));
+                logDiv.innerText = `SYS: TEARDOWN COMPLETE. SYSTEM READY.`;
+            },
+            
+            togglePause: function() {
+                if (!window.EJS_emulator) return; // Ensure emulator is actually running
+                
+                this.isPaused = !this.isPaused;
+                const pauseBtn = document.getElementById('pause-btn');
+                const canvas = document.querySelector('#game-div canvas');
+                
+                // Instantly remove browser focus from the button so it doesn't steal keyboard inputs
+                pauseBtn.blur(); 
+                
+                if (this.isPaused) {
+                    pauseBtn.innerText = '[RESUME]';
+                    try {
+                        // Bypass the top-level EJS_emulator.pause() UI overlay state machine and hit the engine directly
+                        if (window.EJS_emulator.gameManager && typeof window.EJS_emulator.gameManager.pause === 'function') window.EJS_emulator.gameManager.pause();
+                        else if (window.EJS_emulator.Module && typeof window.EJS_emulator.Module.pauseMainLoop === 'function') window.EJS_emulator.Module.pauseMainLoop();
+                    } catch (e) { console.warn("[TV] Pause command failed:", e); }
+                } else {
+                    pauseBtn.innerText = '[PAUSE]';
+                    
+                    // Restore focus immediately before resuming
+                    if (canvas) canvas.focus();
+                    
+                    try {
+                        if (window.EJS_emulator.gameManager && typeof window.EJS_emulator.gameManager.resume === 'function') window.EJS_emulator.gameManager.resume();
+                        else if (window.EJS_emulator.Module && typeof window.EJS_emulator.Module.resumeMainLoop === 'function') window.EJS_emulator.Module.resumeMainLoop();
+                    } catch (e) { console.warn("[TV] Resume command failed:", e); }
                 }
             }
+        };
+
+        // Dynamic Library Fetcher
+        async function initializeLibrary() {
+            const response = await fetch('/api/games');
+            libraryData = await response.json();
+            
+            const consoles = ['ALL', ...new Set(libraryData.map(g => g.console))];
+            const tabContainer = document.getElementById('console-tabs');
+            
+            consoles.forEach((cons, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${idx === 0 ? 'active' : ''}`;
+                btn.innerText = `[${cons}]`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderLibraryList(cons);
+                };
+                tabContainer.appendChild(btn);
+            });
+            
+            renderLibraryList('ALL');
+        }
+
+        function renderLibraryList(filter) {
+            const list = document.getElementById('game-list');
+            list.innerHTML = '';
+            const data = filter === 'ALL' ? libraryData : libraryData.filter(g => g.console === filter);
+            
+            data.forEach(game => {
+                const item = document.createElement('div');
+                item.className = 'game-item';
+                item.innerText = `▶ ${game.title}`;
+                item.onmouseenter = () => {
+                    document.getElementById('meta-title').innerText = game.title;
+                    document.getElementById('meta-console').innerText = `${game.console} // REL: ${game.release}`;
+                    document.getElementById('meta-desc').innerText = game.description;
+                };
+                item.onclick = () => ApplicationState.enterGameplay(game);
+                list.appendChild(item);
+            });
+        }
+        
+        // 🎮 NATIVE HTML5 GAMEPAD MOCKING 🎮
+        const virtualGamepads = [null, null, null, null];
+        
+        Object.defineProperty(navigator, 'getGamepads', {
+            value: () => virtualGamepads,
+            configurable: true
         });
 
-        const nesButtonMap = {
-            'A': jsnes.Controller.BUTTON_A, 'B': jsnes.Controller.BUTTON_B,
-            'UP': jsnes.Controller.BUTTON_UP, 'DOWN': jsnes.Controller.BUTTON_DOWN,
-            'LEFT': jsnes.Controller.BUTTON_LEFT, 'RIGHT': jsnes.Controller.BUTTON_RIGHT
+        const gamepadMap = {
+            'B': 0, 'A': 1, 'SELECT': 8, 'START': 9,
+            'UP': 12, 'DOWN': 13, 'LEFT': 14, 'RIGHT': 15
         };
+
+        function getOrCreateGamepad(index) {
+            if (!virtualGamepads[index]) {
+                virtualGamepads[index] = {
+                    id: `Standard Gamepad (Virtual Controller ${index + 1})`,
+                    index: index,
+                    connected: true,
+                    timestamp: performance.now(),
+                    mapping: 'standard',
+                    axes: [0, 0, 0, 0],
+                    buttons: Array(18).fill(null).map(() => ({ pressed: false, touched: false, value: 0 }))
+                };
+                
+                // Alert the browser and EmulatorJS that a new physical controller was plugged in
+                const ev = new Event('gamepadconnected');
+                ev.gamepad = virtualGamepads[index];
+                window.dispatchEvent(ev);
+                console.log(`[TV] 🎮 Virtual Gamepad ${index + 1} securely registered to browser hardware loop.`);
+            }
+            return virtualGamepads[index];
+        }
 
         const socket = new WebSocket(`ws://${window.location.host}`);
         socket.onopen = () => socket.send(JSON.stringify({ type: 'REGISTER_TV' }));
@@ -152,9 +251,9 @@
 
             if (msg.type === 'SYSTEM_CONFIG') {
                 document.getElementById("qrcode-container").innerHTML = "";
-                new QRCode(document.getElementById("qrcode-container"), {
-                    text: msg.connectUrl, width: 100, height: 100
-                });
+                if (msg.qrDataUrl) {
+                    document.getElementById("qrcode-container").innerHTML = `<img src="${msg.qrDataUrl}" alt="Controller URL" style="display: block;">`;
+                }
             }
 
             if (msg.type === 'PLAYER_STATUS_UPDATE') {
@@ -162,11 +261,27 @@
                 updateUIField('p2-indicator', 'p2-name', msg.p2Connected, msg.p2Name);
             }
 
-            if (msg.button !== undefined) {
-                const targetButton = nesButtonMap[msg.button];
-                if (targetButton !== undefined) {
-                    if (msg.action === 'DOWN') nes.buttonDown(1, targetButton);
-                    else nes.buttonUp(1, targetButton);
+            if (msg.button !== undefined && msg.player !== undefined) {
+                console.log(`[TV] Received Input: Player ${msg.player} | Button: ${msg.button} | Action: ${msg.action}`);
+                
+                // FSM Input Barrier: Silently discard WS Controller events if in LOBBY mode
+                if (ApplicationState.current !== 'GAMEPLAY') {
+                    console.log(`[TV] Input Dropped: System is in LOBBY mode.`);
+                    return; 
+                }
+
+                const gamepadIndex = msg.player - 1; // Player 1 is array index 0
+                const btnIndex = gamepadMap[msg.button];
+
+                if (btnIndex !== undefined) {
+                    const pad = getOrCreateGamepad(gamepadIndex);
+                    const isPressed = msg.action === 'DOWN';
+                    
+                    pad.buttons[btnIndex].pressed = isPressed;
+                    pad.buttons[btnIndex].value = isPressed ? 1 : 0;
+                    pad.timestamp = performance.now();
+                } else {
+                    console.warn(`[TV] Unmapped button or missing gamepad index: ${msg.button}`);
                 }
             }
         };
@@ -181,18 +296,38 @@
             }
         }
 
-        function frameLoop() { requestAnimationFrame(frameLoop); nes.frame(); }
+        function loadROM(game) {
+            document.getElementById('emulator-container').innerHTML = '<div id="game-div"></div>';
+            
+            // Map standard console names into explicit EmulatorJS core identifiers
+            const coreMap = {
+                'NES': 'nes',
+                'SEGA': 'md',
+                'PS1': 'psx',
+                'SNES': 'snes',
+                'GBA': 'gba'
+            };
+            
+            window.EJS_player = '#game-div';
+            window.EJS_core = coreMap[game.console.toUpperCase()] || 'nes';
+            window.EJS_gameUrl = game.path;
+            window.EJS_pathtodata = '/emulatorjs/data/'; // Fetch WASM Cores directly from local offline directory
+            window.EJS_startOnLoaded = true; // Bypass the Start Game overlay screen
+            window.EJS_hideSettings = true; // Hide default EmulatorJS overlay media controls
+            window.EJS_volume = 1; // Set emulator volume to 100% (value between 0 and 1)
+            window.EJS_Buttons = { fullscreen: false }; // Explicitly disable native fullscreen controls
 
-        function loadMarioROM() {
-            fetch('/mario.nes')
-                .then(res => res.arrayBuffer())
-                .then(buffer => {
-                    let bytes = new Uint8Array(buffer); let romData = "";
-                    for (let i = 0; i < bytes.length; i++) { romData += String.fromCharCode(bytes[i]); }
-                    nes.loadROM(romData); frameLoop();
-                    logDiv.innerText = "SYS: CHANNELS BOOTED WITH AUDIO ENABLED.";
-                });
+            // Inject the dynamic loader script
+            const existingScript = document.getElementById('ejs-loader');
+            if (existingScript) existingScript.remove();
+            
+            const script = document.createElement('script');
+            script.id = 'ejs-loader';
+            script.src = '/emulatorjs/data/loader.js';
+            document.body.appendChild(script);
         }
+        
+        window.onload = initializeLibrary;
     </script>
 </body>
 </html>
