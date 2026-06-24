@@ -3,119 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Retro Web Console</title>
+    <link href="/assets/css/common.css" rel="stylesheet">
+    <link href="/assets/css/lobby.css" rel="stylesheet">
+    <link href="/assets/css/gameplay.css" rel="stylesheet">
     <link href="/fonts/press-start-2p/index.css" rel="stylesheet">
-    <link rel="icon" href="/favicon/favicon32.png" type="image/x-icon">
-    <style>
-        body {
-            background-color: #0f171e; color: #ffffff; font-family: 'Press Start 2P', monospace;
-            margin: 0; padding: 20px; height: 100vh; box-sizing: border-box;
-            overflow: hidden; user-select: none;
-        }
-        
-        /* STEP 2: Prime Video Style Streaming Lobby */
-        #lobby-view {
-            display: flex; flex-direction: column; height: 100%; width: 100%;
-        }
-        
-        .hero-spotlight {
-            height: 45%; position: relative; padding: 40px; box-sizing: border-box;
-            display: flex; align-items: flex-end;
-            background: linear-gradient(to top, #0f171e 5%, transparent 100%);
-        }
-        #hero-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; z-index: -1; transition: opacity 0.3s ease; }
-        
-        .hero-content { z-index: 1; max-width: 800px; transition: opacity 0.2s ease; }
-        #hero-title { font-size: 24px; color: #fff; margin: 0 0 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-        #hero-meta { font-size: 10px; color: #00a8e1; margin-bottom: 15px; }
-        #hero-desc { font-size: 10px; color: #8197a4; line-height: 1.6; }
-
-        .lobby-logo {
-            position: absolute; top: 40px; left: 40px; width: 48px; height: 48px;
-            z-index: 10; image-rendering: pixelated; filter: drop-shadow(0 0 8px rgba(0, 168, 225, 0.6));
-        }
-
-        .lobby-controls {
-            padding: 0 60px 10px; display: flex; justify-content: flex-end; z-index: 10; align-items: center;
-        }
-        .sort-select {
-            background: #1a242f; color: #00a8e1; border: 2px solid #00a8e1; padding: 8px 12px;
-            font-family: 'Press Start 2P', monospace; font-size: 8px; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s;
-        }
-        .sort-select:hover { background: #00a8e1; color: #12131c; }
-
-        .deck-wrapper { height: 55%; position: relative; display: flex; align-items: center; width: 100%; }
-        
-        .scroll-btn {
-            position: absolute; top: 50%; transform: translateY(-50%);
-            background: rgba(26, 36, 47, 0.9); border: 2px solid #00a8e1; color: #00a8e1;
-            font-family: 'Press Start 2P'; font-size: 16px; padding: 20px 10px; cursor: pointer;
-            z-index: 10; border-radius: 4px; transition: 0.2s;
-        }
-        .scroll-btn:hover { background: #00a8e1; color: #12131c; }
-        #scroll-left { left: 10px; }
-        #scroll-right { right: 10px; }
-
-        .curated-rows {
-            height: 100%; width: 100%; padding: 0 60px; overflow-x: auto; overflow-y: hidden;
-            display: flex; align-items: center; gap: 20px; scroll-behavior: smooth;
-            -ms-overflow-style: none; scrollbar-width: none;
-        }
-        .curated-rows::-webkit-scrollbar { display: none; }
-        
-        .game-card {
-            width: 240px; height: 135px; background: #1a242f; border-radius: 8px;
-            border: 3px solid transparent; cursor: pointer; transition: transform 0.2s, border-color 0.2s;
-            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 10px; text-align: center; padding: 0; box-sizing: border-box;
-            position: relative; overflow: hidden;
-        }
-        .game-card:hover { transform: scale(1.05); border-color: #00a8e1; }
-
-        /* STEP 3: 2-Panel Gameplay Layout */
-        #gameplay-view {
-            display: none; flex-direction: column; height: 100%; width: 100%;
-        }
-        
-        #game-panel {
-            flex: 1; background: #000; display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-        }
-        #game-div { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #game-div canvas { width: 100% !important; height: 100% !important; object-fit: fill !important; }
-
-        .system-footer {
-            height: 80px; background: #12131c; border-top: 2px solid #1f2235;
-            display: flex; justify-content: space-between; align-items: center; padding: 0 40px; flex-shrink: 0;
-        }
-        
-        .btn { background: #2c3e50; border: none; color: #fff; font-family: 'Press Start 2P'; font-size: 10px; padding: 15px 20px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
-        .btn:hover { background: #34495e; }
-        .btn-danger { background: rgba(255, 74, 90, 0.1); border: 2px solid #ff4a5a; color: #ff4a5a; }
-        .btn-danger:hover { background: #ff4a5a; color: #12131c; }
-        
-        .player-status-container { display: flex; gap: 30px; }
-        .status-chip { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #8197a4; }
-        .indicator { width: 12px; height: 12px; border-radius: 50%; background: #8b0000; border: 2px solid #ff4a5a; }
-        .status-chip.online { color: #fff; }
-        .status-chip.online .indicator { background: #00ffff; border-color: #00ffff; box-shadow: 0 0 10px #00ffff; }
-
-        /* QR Code Modal Overlay */
-        #qr-modal-overlay {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: center;
-        }
-        .qr-modal-box { background: #1a242f; padding: 30px; border-radius: 8px; border: 2px solid #00a8e1; display: flex; flex-direction: column; align-items: center; }
-    </style>
+    <link rel="icon" href="/assets/favicon/favicon32.png" type="image/x-icon">
+    <script src="/cores/browserfs.min.js" defer></script>
+    <script src="/assets/js/network.js" defer></script>
+    <script src="/assets/js/gameplay.js?v=1.0.7" defer></script>
+    <script src="/assets/js/lobby.js" defer></script>
 </head>
 <body>
 
     <!-- Background Music -->
-    <audio id="lobby-audio" src="/audio/lobby.mp3" loop preload="auto"></audio>
+    <audio id="lobby-audio" src="/assets/audio/lobby.mp3" loop preload="auto"></audio>
 
-    <!-- STEP 2: Prime Video Style Streaming Lobby -->
+    <!-- Lobby View -->
     <div id="lobby-view">
         <div class="hero-spotlight">
-            <img class="lobby-logo" src="/favicon/favicon32.png" alt="System Logo">
+            <img class="lobby-logo" src="/assets/favicon/favicon32.png" alt="System Logo">
             <img id="hero-bg" src="">
             <div class="hero-content">
                 <h1 id="hero-title">AWAITING SELECTION</h1>
@@ -124,8 +30,6 @@
             </div>
         </div>
         <div class="lobby-controls">
-            <button class="btn" style="margin-right: auto; padding: 8px 12px; font-size: 8px; border: 2px solid #00a8e1; background: transparent; color: #00a8e1;" onclick="document.getElementById('rom-upload').click()">[+] LOAD LOCAL ROM</button>
-            <input type="file" id="rom-upload" style="display: none;" accept=".nes,.sfc,.smc,.md,.smd,.gen,.gba,.iso,.cue,.chd,.bin" onchange="handleFileUpload(event)">
             <span style="font-size: 8px; color: #8197a4; margin-right: 15px;">SORT BY:</span>
             <select id="sort-select" class="sort-select" onchange="sortLibrary(this.value)">
                 <option value="title_asc">TITLE (A-Z)</option>
@@ -142,8 +46,8 @@
         </div>
     </div>
 
-    <!-- STEP 3: 2-Panel Gameplay Layout -->
-    <div id="gameplay-view">
+    <!-- Gameplay View -->
+    <div id="gameplay-view" class="webos-clean-ui">
         <div id="game-panel">
             <div id="game-div"></div>
         </div>
@@ -156,7 +60,7 @@
                 <div class="status-chip" id="p2-chip"><div class="indicator"></div> <span id="p2-name">P2: OFFLINE</span></div>
             </div>
             
-            <button class="btn" onclick="document.getElementById('qr-modal-overlay').style.display = 'flex';">[CONTROLLER QR]</button>
+            <button class="btn" onclick="openQrModal()">[CONTROLLER QR]</button>
         </div>
     </div>
 
@@ -169,365 +73,6 @@
         </div>
     </div>
 
-    <script>
-        let libraryData = [];
-        
-        // FSM: The Application State Arbitrator
-        const ApplicationState = {
-            current: 'LOBBY', // 'LOBBY' | 'GAMEPLAY'
-            isMenuOpen: false,
-            
-            enterGameplay: async function(game) {
-                this.current = 'GAMEPLAY';
-                this.isMenuOpen = false;
-                
-                document.getElementById('lobby-view').style.display = 'none';
-                document.getElementById('gameplay-view').style.display = 'flex';
-                
-                const bgm = document.getElementById('lobby-audio');
-                bgm.muted = true;
-                bgm.volume = 0;
-                bgm.pause();
-                bgm.removeAttribute('src'); // Completely destroy the audio source to guarantee silence
 
-                socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: 'GAMEPLAY', core: game.console, layout: game.layout }));
-                
-                loadROM(game);
-            },
-
-            // STEP 5: State Machine Tear-Down Protocol
-            exitGameplay: function() {
-                // Instantly mute and pause the emulator to stop any background audio
-                if (window.EJS_emulator) {
-                    try { window.EJS_emulator.mute(); } catch (e) {}
-                    try { if (window.EJS_emulator.gameManager) window.EJS_emulator.gameManager.pause(); } catch (e) {}
-                }
-
-                this.current = 'LOBBY';
-                
-                document.getElementById('gameplay-view').style.display = 'none';
-                document.getElementById('lobby-view').style.display = 'flex';
-                
-                // Strip the "Leave Site?" warning EmulatorJS attaches to the window
-                // that actively blocks our programmatic reload command!
-                window.onbeforeunload = null;
-
-                // A full page reload is the most robust and reliable method to completely
-                // tear down the WebAssembly emulator core and its injected global scripts.
-                // This prevents "identifier has already been declared" errors on subsequent
-                // game launches by ensuring a clean execution environment.
-                window.location.reload();
-            }
-        };
-
-        // Safe Audio Helper to prevent the "Play request interrupted by pause" DOMException
-        function playLobbyMusic() {
-            const bgm = document.getElementById('lobby-audio');
-            if (ApplicationState.current !== 'LOBBY') return;
-            if (!bgm.hasAttribute('src')) return; // Prevent playing if the source was destroyed
-            
-            bgm.volume = 0.3; // 30% volume
-            const playPromise = bgm.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    if (ApplicationState.current !== 'LOBBY') bgm.pause();
-                }).catch(err => console.warn('[TV] Autoplay blocked by browser. BGM will start upon interaction.'));
-            }
-        }
-
-        // Dynamic Library Fetcher
-        async function initializeLibrary() {
-            const response = await fetch('/api/games');
-            libraryData = await response.json();
-            
-            // Initialize library by default sorting to Title (A-Z) and rendering the first item
-            sortLibrary('title_asc');
-            
-            // Attempt to start background music
-            playLobbyMusic();
-        }
-
-        function updateHeroSpotlight(game) {
-            if (!game) return;
-            document.getElementById('hero-title').innerText = game.title;
-            document.getElementById('hero-meta').innerText = `${game.console} | ${game.release}`;
-            document.getElementById('hero-desc').innerText = game.description;
-            document.getElementById('hero-bg').src = game.image || '';
-        }
-
-        function sortLibrary(criterion) {
-            function getYear(y) {
-                const parsed = parseInt(y);
-                return isNaN(parsed) ? 0 : parsed;
-            }
-
-            if (criterion === 'title_asc') {
-                libraryData.sort((a, b) => a.title.localeCompare(b.title));
-            } else if (criterion === 'title_desc') {
-                libraryData.sort((a, b) => b.title.localeCompare(a.title));
-            } else if (criterion === 'console') {
-                libraryData.sort((a, b) => a.console.localeCompare(b.console) || a.title.localeCompare(b.title));
-            } else if (criterion === 'year_desc') {
-                libraryData.sort((a, b) => getYear(b.release) - getYear(a.release));
-            } else if (criterion === 'year_asc') {
-                libraryData.sort((a, b) => {
-                    let ya = getYear(a.release); let yb = getYear(b.release);
-                    if (ya === 0) ya = 9999; if (yb === 0) yb = 9999;
-                    return ya - yb;
-                });
-            }
-            
-            renderLibraryList();
-            updateHeroSpotlight(libraryData[0]); // Instantly push the first game's metadata to the Hero block
-        }
-
-        function renderLibraryList() {
-            const rowsDeck = document.getElementById('game-rows');
-            rowsDeck.innerHTML = '';
-            
-            libraryData.forEach(game => {
-                const item = document.createElement('div');
-                item.className = 'game-card';
-                
-                if (game.image) {
-                    item.innerHTML = `
-                        <img src="${game.image}" alt="${game.title}" style="width: 100%; height: 100%; object-fit: cover;">
-                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 30, 0.85); padding: 8px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${game.title}</div>
-                    `;
-                } else {
-                    item.innerHTML = `<div style="padding: 10px;">${game.title}</div>`;
-                }
-                // Magic Remote Hover Interaction
-                item.onmouseenter = () => updateHeroSpotlight(game);
-                item.onclick = () => ApplicationState.enterGameplay(game);
-                rowsDeck.appendChild(item);
-            });
-        }
-        
-        function scrollDeck(direction) {
-            const rowsDeck = document.getElementById('game-rows');
-            const scrollAmount = 520; // Scroll past roughly two game cards at a time
-            rowsDeck.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
-        }
-        
-        // Local Device ROM Upload Handler
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const ext = file.name.split('.').pop().toLowerCase();
-            let consoleName = 'NES'; // Default fallback
-            
-            if (['nes'].includes(ext)) consoleName = 'NES';
-            else if (['smc', 'sfc'].includes(ext)) consoleName = 'SNES';
-            else if (['md', 'smd', 'gen'].includes(ext)) consoleName = 'SEGA';
-            else if (['gba'].includes(ext)) consoleName = 'GBA';
-            else if (['iso', 'cue', 'chd', 'bin', 'img'].includes(ext)) consoleName = 'PS1';
-
-            const virtualGame = {
-                title: file.name.replace(/\.[^/.]+$/, ""),
-                console: consoleName,
-                layout: consoleName, // Inherit standard layout structure
-                path: URL.createObjectURL(file) // Generate a temporary browser memory URL
-            };
-
-            ApplicationState.enterGameplay(virtualGame);
-            event.target.value = ''; // Reset input to allow re-uploading the same file if needed
-        }
-        
-        // 🎮 NATIVE HTML5 GAMEPAD MOCKING 🎮
-        // Bypass browser KeyboardEvent security by spoofing physical hardware gamepads
-        const virtualGamepads = [null, null, null, null];
-        
-        Object.defineProperty(navigator, 'getGamepads', {
-            value: () => virtualGamepads,
-            configurable: true
-        });
-
-        const gamepadMap = {
-            'B': 0, 'A': 1, 'Y': 2, 'X': 3,
-            'L1': 4, 'R1': 5, 'L2': 6, 'R2': 7,
-            'SELECT': 8, 'START': 9,
-            'UP': 12, 'DOWN': 13, 'LEFT': 14, 'RIGHT': 15
-        };
-
-        function getOrCreateGamepad(index) {
-            if (!virtualGamepads[index]) {
-                virtualGamepads[index] = {
-                    id: `Standard Gamepad (Virtual Controller ${index + 1})`,
-                    index: index,
-                    connected: true,
-                    timestamp: performance.now(),
-                    mapping: 'standard',
-                    axes: [0, 0, 0, 0],
-                    buttons: Array(18).fill(null).map(() => ({ pressed: false, touched: false, value: 0 }))
-                };
-                const ev = new Event('gamepadconnected');
-                ev.gamepad = virtualGamepads[index];
-                window.dispatchEvent(ev);
-            }
-            return virtualGamepads[index];
-        }
-
-        function removeGamepad(index) {
-            if (virtualGamepads[index]) {
-                const ev = new Event('gamepaddisconnected');
-                ev.gamepad = virtualGamepads[index];
-                window.dispatchEvent(ev);
-                virtualGamepads[index] = null;
-            }
-        }
-
-        const REVERSE_BINARY_MAP = {
-            1: 'Y', 2: 'B', 3: 'L1', 4: 'X', 5: 'A', 6: 'R1',
-            7: 'UP', 8: 'DOWN', 9: 'LEFT', 10: 'RIGHT',
-            11: 'SELECT', 12: 'START', 13: 'MENU', 14: 'PAUSE', 15: 'SAVE_STATE'
-        };
-
-        function processControllerInput(player, button, action) {
-            if (ApplicationState.current !== 'GAMEPLAY') return; 
-                
-            // Smartphone Context Menu / Explicit Pause Toggle
-            if ((button === 'MENU' || button === 'PAUSE') && action === 'DOWN') {
-                if (window.EJS_emulator && window.EJS_emulator.gameManager) {
-                    ApplicationState.isMenuOpen = !ApplicationState.isMenuOpen;
-                    if (ApplicationState.isMenuOpen) {
-                        try { window.EJS_emulator.gameManager.pause(); } catch(e){}
-                    } else {
-                        try { window.EJS_emulator.gameManager.resume(); } catch(e){}
-                        setTimeout(() => {
-                            const canvas = document.querySelector('#game-div canvas');
-                            if (canvas) canvas.focus();
-                        }, 50);
-                    }
-                }
-                return; // Prevent the menu key from being forwarded to the emulator core
-            }
-
-            // Smartphone Save State Macro Trigger (SELECT + START)
-            if (button === 'SAVE_STATE' && action === 'DOWN') {
-                if (window.EJS_emulator && typeof window.EJS_emulator.saveState === 'function') {
-                    try { window.EJS_emulator.saveState(); } catch(e){ console.warn("[TV] Save state failed:", e); }
-                }
-                return;
-            }
-
-            // STEP 4: Mobile Input Bridge -> Route to Native Gamepads
-            const gamepadIndex = player - 1; // Player 1 is array index 0
-            const btnIndex = gamepadMap[button];
-
-            if (btnIndex !== undefined) {
-                const pad = getOrCreateGamepad(gamepadIndex);
-                const isPressed = action === 'DOWN';
-                pad.buttons[btnIndex].pressed = isPressed;
-                pad.buttons[btnIndex].value = isPressed ? 1 : 0;
-                pad.timestamp = performance.now();
-            }
-        }
-
-        const socket = new WebSocket(`ws://${window.location.host}`);
-        socket.binaryType = "arraybuffer"; // Ensure binary chunks are parsed as fast memory buffers
-        socket.onopen = () => socket.send(JSON.stringify({ type: 'REGISTER_TV' }));
-
-        socket.onmessage = (event) => {
-            // 🚀 High-Speed Binary Compression Parser
-            if (event.data instanceof ArrayBuffer) {
-                const view = new Uint8Array(event.data);
-                if (view.length === 2) {
-                    const byte0 = view[0];
-                    const byte1 = view[1];
-                    
-                    const player = (byte0 === 1 || byte0 === 2) ? 1 : 2;
-                    const action = (byte0 === 1 || byte0 === 3) ? 'DOWN' : 'UP';
-                    const button = REVERSE_BINARY_MAP[byte1];
-                    
-                    if (button) processControllerInput(player, button, action);
-                }
-                return;
-            }
-
-            const msg = JSON.parse(event.data);
-
-            if (msg.type === 'SYSTEM_CONFIG') {
-                document.getElementById("qrcode-container").innerHTML = "";
-                if (msg.qrDataUrl) {
-                    document.getElementById("qrcode-container").innerHTML = `<img src="${msg.qrDataUrl}" alt="Controller URL" style="display: block;">`;
-                }
-            }
-
-            if (msg.type === 'PLAYER_STATUS_UPDATE') {
-                updateUIField('p1-chip', 'p1-name', msg.p1Connected, msg.p1Name, 'P1');
-                updateUIField('p2-chip', 'p2-name', msg.p2Connected, msg.p2Name, 'P2');
-                
-                // Hot-Swap Hardware Emulation: Plug/Unplug Virtual Gamepads instantly
-                if (msg.p1Connected) getOrCreateGamepad(0); else removeGamepad(0);
-                if (msg.p2Connected) getOrCreateGamepad(1); else removeGamepad(1);
-            }
-
-            if (msg.button !== undefined && msg.player !== undefined) {
-                // Fallback for older textual JSON inputs during migration
-                processControllerInput(msg.player, msg.button, msg.action);
-            }
-        };
-
-        function updateUIField(chipId, textId, active, handle, prefix) {
-            const chip = document.getElementById(chipId);
-            const txt = document.getElementById(textId);
-            if (active) {
-                chip.classList.add('online'); txt.innerText = `${prefix}: ${handle}`;
-            } else {
-                chip.classList.remove('online'); txt.innerText = `${prefix}: OFFLINE`;
-            }
-        }
-
-        function loadROM(game) {
-            document.getElementById('game-panel').innerHTML = '<div id="game-div"></div>';
-            
-            // Map standard console names into explicit EmulatorJS core identifiers
-            const coreMap = {
-                'NES': 'nes',
-                'SEGA': 'genesis_plus_gx',
-                'PS1': 'psx',
-                'SNES': 'snes',
-                'GBA': 'gba'
-            };
-            
-            window.EJS_player = '#game-div';
-            window.EJS_core = coreMap[game.console.toUpperCase()];
-            window.EJS_gameUrl = game.path;
-            window.EJS_pathtodata = '/emulatorjs/data/';
-            
-            // STEP 4: Audio Locking Parameters & UI Restriction Flags
-            window.EJS_volume = 1.0; 
-            window.EJS_startVolume = 100; // Forces backend node to max volume capacity [cite: 2096, 2135]
-
-            // 3. CORRECT API FOR UI EXCLUSIONS (Must be a string array)
-            // This strips the volume slider and option menus off the layout entirely
-            window.EJS_hidedButtons = ['volume', 'settings', 'fullscreen', 'mute', 'saveState', 'loadState']; 
-
-            // 4. State Management Toggles
-            window.EJS_stateSave = true; // Exposes state snapshot protocols [cite: 2112, 2174]
-            window.EJS_stateLoad = true;
-
-            window.EJS_startOnLoaded = true;
-
-            // Inject the dynamic loader script
-            const existingScript = document.getElementById('ejs-loader');
-            if (existingScript) existingScript.remove();
-            
-            const script = document.createElement('script');
-            script.id = 'ejs-loader';
-            script.src = '/emulatorjs/data/loader.js';
-            document.body.appendChild(script);
-        }
-        
-        window.onload = initializeLibrary;
-
-        // Fallback: Some modern browsers block audio auto-play until the user interacts with the page.
-        // This listener ensures the music starts playing the moment you click anywhere on the screen!
-        document.body.addEventListener('click', () => {
-            playLobbyMusic();
-        }, { once: true });
-    </script>
 </body>
 </html>

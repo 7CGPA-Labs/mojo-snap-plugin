@@ -135,17 +135,17 @@ wss.on('connection', (socket, req) => {
 
     socket.on('message', async (message) => {
         // MODULE 5: Dual-Stream Packet Parser (JSON for text, Raw Buffer for binary)
-        if (message instanceof Buffer) {
-            if (tvSocket && tvSocket.readyState === 1) {
-                // The mobile client natively condenses the payload to 2 bytes (Player/Phase + Button)
-                // Forward the binary bits precisely as received for zero-latency execution
-                tvSocket.send(message);
+        // Try to parse as JSON first. If it fails, assume it's a binary buffer.
+        let data;
+        try {
+            data = JSON.parse(message);
+        } catch (e) {
+            // This is expected for binary controller data
+            if (tvSocket && tvSocket.readyState === 1 && message instanceof Buffer) {
+                tvSocket.send(message); // Forward binary bits precisely as received
             }
-            return; // Binary packet processed, no further action needed.
+            return; // Packet processed, no further action needed.
         }
-
-        // Fallback for text-based JSON frames
-        const data = JSON.parse(message);
 
         if (data.type === 'REGISTER_TV') {
             console.log(`📺 [WEBSOCKET] TV Display registered.`);
