@@ -39,29 +39,7 @@ function applyDynamicLayout(core, layoutCode) {
     if (!actionDeck) return;
     const activeLayoutUpper = (layoutCode || core || 'NES').toUpperCase();
 
-    // ⚔️ Custom 6-Button Fighting Deck
-    if (activeLayoutUpper === 'MK_LAYOUT') {
-        // Explicit PS1 MK Layout Mapping
-        if (triggerDeck) triggerDeck.style.display = 'none'; // Triggers are structurally moved to the face deck
-        actionDeck.innerHTML = `
-            <div style="display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto auto auto; gap: 12px; justify-items: center; align-items: center; transform: rotate(-5deg);">
-                <div style="grid-column: 1 / span 2; display: flex; gap: 20px;">
-                    <button class="act-btn" data-btn="Y" style="background:#1f2235; border-color:#00f2fe; width:70px; height:70px; font-size:18px;">HP</button>
-                    <button class="act-btn" data-btn="X" style="background:#1f2235; border-color:#00f2fe; width:70px; height:70px; font-size:18px;">HK</button>
-                </div>
-                <div style="grid-column: 1 / span 2;">
-                    <button class="act-btn block-btn" data-btn="L1" style="background:#4e5166; width:65px; height:65px; font-size:16px;">BL</button>
-                </div>
-                <div style="grid-column: 1 / span 2; display: flex; gap: 20px;">
-                    <button class="act-btn" data-btn="B" style="background:#ff4a5a; border-color:#12131c; width:70px; height:70px; font-size:18px;">LP</button>
-                    <button class="act-btn" data-btn="A" style="background:#ff4a5a; border-color:#12131c; width:70px; height:70px; font-size:18px;">LK</button>
-                </div>
-                <div style="grid-column: 1 / span 2;">
-                    <button class="act-btn" data-btn="R1" style="background:#00f2fe; color:#12131c; width:90px; height:40px; border-radius:12px; font-size:14px;">RN</button>
-                </div>
-            </div>
-        `;
-    } else if (activeLayoutUpper.includes('SNES') || activeLayoutUpper.includes('PS1') || activeLayoutUpper.includes('GBA') || activeLayoutUpper.includes('PLAYSTATION')) {
+    if (activeLayoutUpper.includes('SNES') || activeLayoutUpper.includes('GBA')) {
         if (triggerDeck) triggerDeck.style.display = 'flex';
         actionDeck.innerHTML = `
             <div class="act-row top-row" style="display: flex;">
@@ -108,8 +86,7 @@ function recalculateButtonCoordinates() {
         const name = btn.getAttribute('data-btn');
         if (!name) return; // Safely ignore non-gamepad UI elements like the disconnect button
         
-        const rect = btn.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return; // Natively ignore hidden elements (like the trigger deck in MK_LAYOUT)
+        if (rect.width === 0 || rect.height === 0) return; // Natively ignore hidden elements
         
         structuralButtons[name] = {
             rect: rect,

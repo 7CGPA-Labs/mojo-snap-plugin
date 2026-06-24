@@ -4,10 +4,12 @@
 const ApplicationState = {
     current: 'LOBBY', // 'LOBBY' | 'GAMEPLAY'
     isMenuOpen: false,
+    isExiting: false,
     
     enterGameplay: async function(game) {
         this.current = 'GAMEPLAY';
         this.isMenuOpen = false;
+        this.isExiting = false;
         
         document.getElementById('lobby-view').style.display = 'none';
         document.getElementById('gameplay-view').style.display = 'flex';
@@ -29,10 +31,11 @@ const ApplicationState = {
 
     // State Machine Tear-Down Protocol
     exitGameplay: function() {
-        // Instantly mute and pause the emulator to stop any background audio
-        if (window.EJS_emulator) {
-            try { window.EJS_emulator.mute(); } catch (e) {}
-            try { if (window.EJS_emulator.gameManager) window.EJS_emulator.gameManager.pause(); } catch (e) {}
+        if (this.isExiting) return;
+        this.isExiting = true;
+
+        if (window.Module) {
+            try { window.Module.retroArchSend("QUIT"); } catch (e) {}
         }
 
         this.current = 'LOBBY';
@@ -40,8 +43,6 @@ const ApplicationState = {
         document.getElementById('gameplay-view').style.display = 'none';
         document.getElementById('lobby-view').style.display = 'flex';
         
-        // Strip the "Leave Site?" warning EmulatorJS attaches to the window
-        // that actively blocks our programmatic reload command!
         window.onbeforeunload = null;
 
         // A full page reload is the most robust and reliable method to completely
@@ -77,66 +78,6 @@ function openQrModal() {
     if (overlay) {
         overlay.style.display = 'flex';
     }
-}
-
-// Local Device ROM Modal Overlay Operations
-function openLocalRomModal() {
-    const modal = document.getElementById('local-rom-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-function closeLocalRomModal() {
-    const modal = document.getElementById('local-rom-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    // Clear input to allow re-selecting the same file if needed
-    const fileInput = document.getElementById('rom-file-input');
-    if (fileInput) {
-        fileInput.value = '';
-    }
-}
-
-function launchLocalROM() {
-    const fileInput = document.getElementById('rom-file-input');
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        alert('Please select a ROM file first.');
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const ext = file.name.split('.').pop().toLowerCase();
-    let consoleName = 'NES'; // Default fallback
-    
-    if (['nes'].includes(ext)) consoleName = 'NES';
-    else if (['smc', 'sfc'].includes(ext)) consoleName = 'SNES';
-    else if (['md', 'smd', 'gen'].includes(ext)) consoleName = 'SEGA';
-    else if (['gba'].includes(ext)) consoleName = 'GBA';
-    else if (['iso', 'cue', 'chd', 'bin', 'img'].includes(ext)) consoleName = 'PS1';
-
-    // Query Layout Preference
-    let layoutPreference = 'AUTO';
-    const radios = document.getElementsByName('layout-preference');
-    for (const radio of radios) {
-        if (radio.checked) {
-            layoutPreference = radio.value;
-            break;
-        }
-    }
-
-    const finalLayout = (layoutPreference === 'MK_LAYOUT') ? 'MK_LAYOUT' : consoleName;
-
-    const virtualGame = {
-        title: file.name.replace(/\.[^/.]+$/, ""),
-        console: consoleName,
-        layout: finalLayout,
-        path: URL.createObjectURL(file) // Generate a temporary browser memory URL
-    };
-
-    closeLocalRomModal();
-    ApplicationState.enterGameplay(virtualGame);
 }
 
 // 🎮 NATIVE HTML5 GAMEPAD MOCKING 🎮
@@ -184,25 +125,25 @@ function removeGamepad(index) {
 
 function processControllerInput(player, button, action) {
     if (ApplicationState.current !== 'GAMEPLAY') return; 
+
+    const gamepadIndex = player - 1;
+    const pad = getOrCreateGamepad(gamepadIndex);
+    const isSelectPressed = pad && pad.buttons[gamepadMap['SELECT']] && pad.buttons[gamepadMap['SELECT']].pressed;
+    const isStartPressed = pad && pad.buttons[gamepadMap['START']] && pad.buttons[gamepadMap['START']].pressed;
         
-    // Smartphone Context Menu / Explicit Pause Toggle
-    if ((button === 'MENU' || button === 'PAUSE') && action === 'DOWN') {
-        const gamepadIndex = player - 1;
-        const pad = virtualGamepads[gamepadIndex];
-        const isSelectPressed = pad && pad.buttons[gamepadMap['SELECT']] && pad.buttons[gamepadMap['SELECT']].pressed;
-        
+    // 1. MENU Button Logic (Toggle Quick Menu)
+    if (button === 'MENU' && action === 'DOWN') {
         if (isSelectPressed) {
-            return; // Skip normal MENU pause if SELECT is held (it's a LOAD_STATE macro)
+            return; // Skip normal menu toggle if SELECT is held (since SELECT+MENU is LOAD_STATE macro)
         }
 
-        if (window.EJS_emulator && window.EJS_emulator.gameManager) {
+        if (window.Module && typeof window.Module.retroArchSend === 'function') {
             ApplicationState.isMenuOpen = !ApplicationState.isMenuOpen;
-            if (ApplicationState.isMenuOpen) {
-                try { window.EJS_emulator.gameManager.pause(); } catch(e){}
-            } else {
-                try { window.EJS_emulator.gameManager.resume(); } catch(e){}
+            console.log("[RetroArch] Triggering MENU_TOGGLE. Menu open:", ApplicationState.isMenuOpen);
+            window.Module.retroArchSend("MENU_TOGGLE");
+            if (!ApplicationState.isMenuOpen) {
                 setTimeout(() => {
-                    const canvas = document.querySelector('#game-div canvas');
+                    const canvas = document.getElementById('canvas');
                     if (canvas) canvas.focus();
                 }, 50);
             }
@@ -210,58 +151,62 @@ function processControllerInput(player, button, action) {
         return; // Prevent the menu key from being forwarded to the emulator core
     }
 
-    // Smartphone Save State Macro Trigger (SELECT + START)
-    if (button === 'SAVE_STATE' && action === 'DOWN') {
-        if (window.EJS_emulator) {
-            try {
-                if (window.EJS_emulator.elements && window.EJS_emulator.elements.bottomBar && window.EJS_emulator.elements.bottomBar.saveState) {
-                    window.EJS_emulator.elements.bottomBar.saveState[0].click();
-                } else if (window.EJS_emulator.gameManager) {
-                    // Fallback to direct state save
-                    const state = window.EJS_emulator.gameManager.getState();
-                    window.EJS_emulator.storage.states.put(window.EJS_emulator.getBaseFileName() + ".state", state);
-                    if (window.EJS_emulator.displayMessage) {
-                        window.EJS_emulator.displayMessage("STATE SAVED");
-                    }
-                }
-            } catch(e) {
-                console.error("[TV] Save state trigger failed:", e);
+    // 2. PAUSE Button Logic (Toggles Pause, Fast Forward, or Reset based on modifiers)
+    if (button === 'PAUSE' && action === 'DOWN') {
+        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+            if (isSelectPressed) {
+                console.log("[RetroArch] Triggering FAST_FORWARD_TOGGLE");
+                window.Module.retroArchSend("FAST_FORWARD_TOGGLE");
+            } else if (isStartPressed) {
+                console.log("[RetroArch] Triggering RESET");
+                window.Module.retroArchSend("RESET");
+            } else {
+                console.log("[RetroArch] Triggering PAUSE_TOGGLE");
+                window.Module.retroArchSend("PAUSE_TOGGLE");
             }
         }
         return;
     }
 
-    // Smartphone Load State Macro Trigger (SELECT + MENU)
-    if (button === 'LOAD_STATE' && action === 'DOWN') {
-        if (window.EJS_emulator) {
-            try {
-                if (window.EJS_emulator.elements && window.EJS_emulator.elements.bottomBar && window.EJS_emulator.elements.bottomBar.loadState) {
-                    window.EJS_emulator.elements.bottomBar.loadState[0].click();
-                } else if (window.EJS_emulator.gameManager) {
-                    // Fallback to direct state load
-                    window.EJS_emulator.storage.states.get(window.EJS_emulator.getBaseFileName() + ".state").then(state => {
-                        if (state) {
-                            window.EJS_emulator.gameManager.loadState(state);
-                            if (window.EJS_emulator.displayMessage) {
-                                window.EJS_emulator.displayMessage("STATE LOADED");
-                            }
-                        }
-                    });
-                }
-            } catch(e) {
-                console.error("[TV] Load state trigger failed:", e);
-            }
+    // 3. Save/Load State Macros (Forwarded from socket network.js macros)
+    if (button === 'SAVE_STATE' && action === 'DOWN') {
+        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+            console.log("[RetroArch] Triggering SAVE_STATE command");
+            window.Module.retroArchSend("SAVE_STATE");
         }
         return;
+    }
+
+    if (button === 'LOAD_STATE' && action === 'DOWN') {
+        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+            console.log("[RetroArch] Triggering LOAD_STATE command");
+            window.Module.retroArchSend("LOAD_STATE");
+        }
+        return;
+    }
+
+    // 4. Save Slot Switching (SELECT + D-pad UP/DOWN)
+    if (isSelectPressed && action === 'DOWN') {
+        if (button === 'UP') {
+            if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                console.log("[RetroArch] Triggering STATE_SLOT_PLUS");
+                window.Module.retroArchSend("STATE_SLOT_PLUS");
+            }
+            return; // Block standard UP input
+        }
+        if (button === 'DOWN') {
+            if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                console.log("[RetroArch] Triggering STATE_SLOT_MINUS");
+                window.Module.retroArchSend("STATE_SLOT_MINUS");
+            }
+            return; // Block standard DOWN input
+        }
     }
 
     // STEP 4: Mobile Input Bridge -> Route to Native Gamepads
-    const gamepadIndex = player - 1; // Player 1 is array index 0
     const btnIndex = gamepadMap[button];
 
     if (btnIndex !== undefined) {
-        const pad = getOrCreateGamepad(gamepadIndex);
-        
         // Block normal START press to emulator if it is part of the macro combo
         if (button === 'START' && action === 'DOWN') {
             if (pad.buttons[gamepadMap['SELECT']].pressed) {
@@ -276,86 +221,274 @@ function processControllerInput(player, button, action) {
     }
 }
 
-function loadROM(game) {
+// BrowserFS File System Persistent Store Bridge
+let afs = null;
+
+function initBrowserFS() {
+    return new Promise((resolve) => {
+        if (afs) {
+            resolve(afs);
+            return;
+        }
+
+        const BrowserFS = window.BrowserFS;
+        const imfs = new BrowserFS.FileSystem.InMemory();
+
+        if (BrowserFS.FileSystem.IndexedDB.isAvailable()) {
+            afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
+                new BrowserFS.FileSystem.IndexedDB((err, fs) => {
+                    if (err) {
+                        console.error("[RetroArch] IndexedDB failure, falling back to InMemory filesystem:", err);
+                        afs = new BrowserFS.FileSystem.InMemory();
+                        completeFSInitialization(afs).then(resolve);
+                    } else {
+                        afs.initialize((initErr) => {
+                            if (initErr) {
+                                console.error("[RetroArch] AsyncMirror initialization failed, fallback to InMemory:", initErr);
+                                afs = new BrowserFS.FileSystem.InMemory();
+                                completeFSInitialization(afs).then(resolve);
+                            } else {
+                                console.log("[RetroArch] BrowserFS Sync Mirror initialized successfully");
+                                completeFSInitialization(afs).then(resolve);
+                            }
+                        });
+                    }
+                }, "RetroArch")
+            );
+        } else {
+            console.warn("[RetroArch] IndexedDB is not supported on this browser. Fallback to InMemory.");
+            afs = new BrowserFS.FileSystem.InMemory();
+            completeFSInitialization(afs).then(resolve);
+        }
+    });
+}
+
+function completeFSInitialization(afsInstance) {
+    return new Promise((resolve) => {
+        const BrowserFS = window.BrowserFS;
+        const mfs = new BrowserFS.FileSystem.MountableFileSystem();
+
+        // Safe fallback in case afsInstance is null or undefined
+        const safeAfs = afsInstance || new BrowserFS.FileSystem.InMemory();
+
+        // Mount the root '/' to an InMemory filesystem to act as a fallback root.
+        // This ensures that any path lookup for directories like '/' or '/home'
+        // succeeds and returns a valid filesystem instead of throwing undefined errors.
+        mfs.mount('/', new BrowserFS.FileSystem.InMemory());
+        mfs.mount('/home/web_user/retroarch', new BrowserFS.FileSystem.InMemory());
+        mfs.mount('/home/web_user/retroarch/userdata', safeAfs);
+
+        BrowserFS.initialize(mfs);
+
+        // Create required directory structures using Node-like API
+        const fs = BrowserFS.BFSRequire('fs');
+        try { fs.mkdirSync('/home'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/cores'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata/saves'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata/states'); } catch (e) {}
+
+        resolve(safeAfs);
+    });
+}
+
+function bindEmscriptenFS(Module) {
+    const BrowserFS = window.BrowserFS;
+    const BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
+
+    // Auto-bind node_ops methods to preserve context 'this' under strict mode / ES6 module imports
+    const nodeProto = Object.getPrototypeOf(BFS.node_ops);
+    for (const key of Object.getOwnPropertyNames(nodeProto)) {
+        if (typeof nodeProto[key] === 'function' && key !== 'constructor') {
+            BFS.node_ops[key] = nodeProto[key].bind(BFS.node_ops);
+        }
+    }
+
+    // Auto-bind stream_ops methods to preserve context 'this' under strict mode / ES6 module imports
+    const streamProto = Object.getPrototypeOf(BFS.stream_ops);
+    for (const key of Object.getOwnPropertyNames(streamProto)) {
+        if (typeof streamProto[key] === 'function' && key !== 'constructor') {
+            BFS.stream_ops[key] = streamProto[key].bind(BFS.stream_ops);
+        }
+    }
+
+    Module.FS.mount(BFS, { root: '/home' }, '/home');
+}
+
+function writeConfig(consoleType) {
+    const BrowserFS = window.BrowserFS;
+    const fs = BrowserFS.BFSRequire('fs');
+    const BufferClass = BrowserFS.BFSRequire('buffer').Buffer;
+    
+    // WebOS TV-optimized configurations for 2D Sprite consoles (NES, SNES, Genesis)
+    const cfgContent = `
+savefile_directory = "/home/web_user/retroarch/userdata/saves"
+savestate_directory = "/home/web_user/retroarch/userdata/states"
+core_options_path = "/home/web_user/retroarch/userdata/retroarch-core-options.cfg"
+video_vsync = "false"
+video_threaded = "true"
+audio_enable = "true"
+audio_latency = "128"
+menu_driver = "rgui"
+video_font_enable = "false"
+video_smooth = "false"
+rewind_enable = "false"
+run_ahead_enabled = "false"
+video_max_swapchain_images = "2"
+video_aspect_ratio_auto = "true"
+    `;
+
+    const optionsContent = `
+fceumm_aspect = "4:3"
+fceumm_palette = "default"
+fceumm_nospritelimit = "disabled"
+snes9x2010_sound_quality = "32000Hz"
+snes9x2010_overclock = "disabled"
+picodrive_audio_filter = "disabled"
+picodrive_overclock = "disabled"
+picodrive_drc = "enabled"
+    `;
+    
+    const encoded = new TextEncoder().encode(cfgContent.trim());
+    fs.writeFileSync('/home/web_user/retroarch/userdata/retroarch.cfg', BufferClass(encoded));
+
+    const encodedOptions = new TextEncoder().encode(optionsContent.trim());
+    fs.writeFileSync('/home/web_user/retroarch/userdata/retroarch-core-options.cfg', BufferClass(encodedOptions));
+}
+
+function writeROM(filename, arrayBuffer) {
+    const BrowserFS = window.BrowserFS;
+    const fs = BrowserFS.BFSRequire('fs');
+    const BufferClass = BrowserFS.BFSRequire('buffer').Buffer;
+    const romPath = `/home/web_user/retroarch/${filename}`;
+    fs.writeFileSync(romPath, BufferClass(new Uint8Array(arrayBuffer)));
+    return romPath;
+}
+
+async function loadROM(game) {
     const gamePanel = document.getElementById('game-panel');
     if (!gamePanel) return;
-    gamePanel.innerHTML = '<div id="game-div"></div>';
     
-    // MODULE 3: Low-Spec Core Profiler & EmulatorJS Configuration
-    // Map standard console names to high-performance legacy cores for low-spec devices.
-    const coreMap = {
-        'NES': 'fceumm',
-        'SNES': 'snes9x', // Use snes9x (snes9x2005 is not in local cores)
-        'SEGA': 'genesis_plus_gx', // Generally performant
-        'GBA': 'mgba', // Use mgba (gpSP is not in local cores)
-        'PS1': 'pcsx_rearmed' // Optimized for ARM, performs well on webOS
-    };
-    
-    window.EJS_player = '#game-div';
-    window.EJS_core = coreMap[game.console.toUpperCase()];
-    window.EJS_gameUrl = game.path;
-    window.EJS_pathtodata = '/assets/js/emulatorjs/data/';
+    // Display Retro console styled clean loading indicator
+    gamePanel.innerHTML = `
+        <div id="retroarch-loader" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b0e14; color: #00a8e1; font-family: 'Press Start 2P', monospace; font-size: 12px; gap: 20px;">
+            <div style="font-size: 16px; animation: pulse 1.5s infinite;">LOADING GAME...</div>
+        </div>
+    `;
 
-    // Inject performance hacks and UI restrictions BEFORE loader.js executes.
-    window.EJS_volume = 1.0; 
-    window.EJS_startVolume = 100;
-    window.EJS_audioLatency = 128; // Wider buffer to prevent audio stalls on weak CPUs
+    try {
+        const coreMap = {
+            'NES': 'fceumm',
+            'SNES': 'snes9x2010',
+            'SEGA': 'picodrive'
+        };
+        const core = coreMap[game.console.toUpperCase()] || 'fceumm';
+        window.currentCore = core;
 
-    // Configure buttons explicitly. Enable saveState and loadState so their DOM interfaces
-    // and listeners are fully initialized, allowing us to programmatically trigger them.
-    window.EJS_Buttons = {
-        saveState: true,
-        loadState: true,
-        playPause: true,
-        restart: false,
-        mute: false,
-        settings: false,
-        fullscreen: false,
-        volume: false,
-        screenRecord: false,
-        gamepad: false,
-        cheat: false,
-        saveSavFiles: false,
-        loadSavFiles: false,
-        quickSave: false,
-        quickLoad: false,
-        screenshot: false,
-        cacheManager: false,
-        exitEmulation: false
-    };
+        // Step 1: Initialize BrowserFS
+        const afsInstance = await initBrowserFS();
 
-    // Default configuration variables
-    window.EJS_defaultOptions = {
-        "save-state-location": "browser"
-    };
+        // Step 2: Fetch ROM array buffer
+        const res = await fetch(game.path);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const buffer = await res.arrayBuffer();
 
+        // Step 3: Write ROM & Config
+        // Extract filename or fallback
+        const ext = game.path.split('.').pop().split('?')[0].toLowerCase() || 'rom';
+        const filename = game.filename || `${game.title ? game.title.replace(/\s+/g, '_') : 'game'}.${ext}`;
+        const romPath = writeROM(filename, buffer);
+        writeConfig(game.console.toUpperCase());
 
-    // Lifecycle hook to inject core-specific performance flags after the emulator initializes.
-    window.EJS_onGameStart = function() {
-        console.log("🚀 [EJS] onGameStart: Injecting performance flags for core:", window.EJS_core);
-        if (window.EJS_core === 'pcsx_rearmed') {
-            // These flags can significantly improve PS1 performance on low-end hardware.
-            window.EJS_emulator.setGlobalOption('pcsx_rearmed_frameskip_type', 'auto');
-            window.EJS_emulator.setGlobalOption('pcsx_rearmed_duping_enable', 'enabled');
-            window.EJS_emulator.setGlobalOption('pcsx_rearmed_dithering', 'disabled');
+        // Write the core placeholder file
+        const fs = BrowserFS.BFSRequire('fs');
+        const BufferClass = BrowserFS.BFSRequire('buffer').Buffer;
+        try {
+            fs.writeFileSync(`/home/web_user/retroarch/cores/${core}_libretro.core`, BufferClass(new Uint8Array(0)));
+        } catch (e) {
+            console.error("[RetroArch] Failed to write core placeholder:", e);
         }
-        // Future optimizations for other cores can be added here.
-    };
 
-    // 4. State Management Toggles
-    window.EJS_stateSave = true; // Exposes state snapshot protocols
-    window.EJS_stateLoad = true;
+        // Step 4: Load Core Script (with cache-busting query parameter)
+        const coreScriptUrl = `/cores/${core}_libretro.js?cb=${Date.now()}`;
+        const scriptModule = await import(coreScriptUrl);
+        const factory = scriptModule.default;
 
-    window.EJS_startOnLoaded = true;
+        // Step 5: Setup canvas and instantiate
+        gamePanel.innerHTML = '<canvas id="canvas" style="width: 100%; height: 100%; display: block; border: 0; outline: none; background: #000;"></canvas>';
+        const canvas = document.getElementById("canvas");
 
-    // Inject the dynamic loader script
-    const existingScript = document.getElementById('ejs-loader');
-    if (existingScript) existingScript.remove();
-    
-    const script = document.createElement('script');
-    script.id = 'ejs-loader';
-    script.src = '/assets/js/emulatorjs/data/loader.js';
-    document.body.appendChild(script);
+        const localModule = {
+            noInitialRun: true,
+            retroArchSend: function(msg) {
+                if (typeof this.EmscriptenSendCommand === 'function') {
+                    this.EmscriptenSendCommand(msg);
+                } else {
+                    console.warn("[RetroArch] EmscriptenSendCommand is not compiled in this core");
+                }
+            },
+            retroArchRecv: function() {
+                return this.EmscriptenReceiveCommandReply ? this.EmscriptenReceiveCommandReply() : null;
+            },
+            retroArchExit: function(core, content) {
+                console.log("[RetroArch] Core exit callback invoked.");
+                ApplicationState.exitGameplay();
+            },
+            onRuntimeInitialized: function() {
+                console.log("🚀 [RetroArch] Core engine is ready!");
+            },
+            print: function(text) {
+                console.log("[RetroArch Core stdout]", text);
+            },
+            printErr: function(text) {
+                console.log("[RetroArch Core stderr]", text);
+            },
+            canvas: canvas,
+            parent: canvas.parentNode,
+            arguments: ["-v", romPath, "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"],
+            corePath: `/home/web_user/retroarch/cores/${core}_libretro.core`,
+            preRun: [function(mod) {
+                mod.ENV["LIBRARY_PATH"] = `/home/web_user/retroarch/cores/${core}_libretro.core`;
+            }],
+            locateFile: function(path, prefix) {
+                if (path.endsWith(".wasm")) {
+                    return `/cores/${path}?cb=${Date.now()}`;
+                }
+                return prefix + path;
+            }
+        };
+
+        const mod = await factory(localModule);
+        window.Module = mod;
+        window.retroArchRunning = true;
+
+        setTimeout(() => {
+            try {
+                console.log("[RetroArch Debug] mod object keys:", mod ? Object.keys(mod) : "null");
+                console.log("[RetroArch Debug] mod.FS:", mod ? mod.FS : "undefined");
+                console.log("[RetroArch Debug] mod.PATH:", mod ? mod.PATH : "undefined");
+                console.log("[RetroArch Debug] mod.ERRNO_CODES:", mod ? mod.ERRNO_CODES : "undefined");
+                bindEmscriptenFS(mod);
+                mod.callMain(mod.arguments);
+                // Force focus on canvas for gamepad keyboard mappings
+                canvas.focus();
+            } catch (e) {
+                console.error("[RetroArch] Boot error during main execution:", e);
+                if (e.stack) {
+                    console.error("[RetroArch] Error Stack Trace:", e.stack);
+                }
+                alert("Failed to boot emulator core: " + e.message + (e.stack ? "\n\nStack:\n" + e.stack : ""));
+                ApplicationState.exitGameplay();
+            }
+        }, 50);
+
+    } catch (err) {
+        console.error("[RetroArch] System failure during loading process:", err);
+        alert("Boot Failure: " + err.message);
+        ApplicationState.exitGameplay();
+    }
 }
 
 // Fallback: Some modern browsers block audio auto-play until the user interacts with the page.
@@ -368,9 +501,6 @@ document.body.addEventListener('click', () => {
 window.ApplicationState = ApplicationState;
 window.playLobbyMusic = playLobbyMusic;
 window.openQrModal = openQrModal;
-window.openLocalRomModal = openLocalRomModal;
-window.closeLocalRomModal = closeLocalRomModal;
-window.launchLocalROM = launchLocalROM;
 window.getOrCreateGamepad = getOrCreateGamepad;
 window.removeGamepad = removeGamepad;
 window.processControllerInput = processControllerInput;

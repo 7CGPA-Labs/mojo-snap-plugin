@@ -1,6 +1,6 @@
 # 🕹️ Retro Web Console Sandbox
 
-A high-performance, low-latency retro game emulation pipeline. This console features a Prime Video-style streaming lobby, dynamic multi-touch smartphone controllers, and an ultra-fast binary WebSocket engine supporting multiple systems (NES, SNES, Genesis, GBA, PS1).
+A high-performance, low-latency retro game emulation pipeline. This console features a Prime Video-style streaming lobby, dynamic multi-touch smartphone controllers, and an ultra-fast binary WebSocket engine supporting multiple systems (NES, SNES, Genesis, GBA).
 
 ## 🛠️ Step-by-Step Launch Sequence
 
@@ -37,8 +37,8 @@ retro-web-console/
         │   ├── mario.png    <-- Box Art / Splash Image
         │   └── mario.json   <-- Game Metadata
         ├── snes/
-        ├── sega/
-        └── ps1/
+        └── sega/
+        
 ```
 
 ### 2. Supply the Game File

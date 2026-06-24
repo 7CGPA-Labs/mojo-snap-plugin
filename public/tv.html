@@ -8,8 +8,9 @@
     <link href="/assets/css/gameplay.css" rel="stylesheet">
     <link href="/fonts/press-start-2p/index.css" rel="stylesheet">
     <link rel="icon" href="/assets/favicon/favicon32.png" type="image/x-icon">
+    <script src="/cores/browserfs.min.js" defer></script>
     <script src="/assets/js/network.js" defer></script>
-    <script src="/assets/js/gameplay.js" defer></script>
+    <script src="/assets/js/gameplay.js?v=1.0.7" defer></script>
     <script src="/assets/js/lobby.js" defer></script>
 </head>
 <body>
@@ -29,7 +30,6 @@
             </div>
         </div>
         <div class="lobby-controls">
-            <button class="btn" style="margin-right: auto; padding: 8px 12px; font-size: 8px; border: 2px solid #00a8e1; background: transparent; color: #00a8e1;" onclick="openLocalRomModal()">[+] LOAD LOCAL ROM</button>
             <span style="font-size: 8px; color: #8197a4; margin-right: 15px;">SORT BY:</span>
             <select id="sort-select" class="sort-select" onchange="sortLibrary(this.value)">
                 <option value="title_asc">TITLE (A-Z)</option>
@@ -73,34 +73,6 @@
         </div>
     </div>
 
-    <!-- Absolute Positioned Local ROM Modal -->
-    <div id="local-rom-modal" class="modal-overlay" onclick="closeLocalRomModal()">
-        <div class="modal-box" onclick="event.stopPropagation();">
-            <div class="modal-title">Load Local ROM</div>
-            <div class="modal-body">
-                <div class="input-group">
-                    <label class="input-label" for="rom-file-input">Select ROM File</label>
-                    <input type="file" id="rom-file-input" class="file-input" accept=".nes,.smc,.sfc,.md,.smd,.gen,.gba,.iso,.cue,.chd,.bin,.img" />
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Controller Layout</label>
-                    <div class="radio-group">
-                        <label class="radio-label">
-                            <input type="radio" name="layout-preference" value="AUTO" checked />
-                            <span>Standard Layout (Auto-detect)</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="layout-preference" value="MK_LAYOUT" />
-                            <span>MK Layout (6-Button Fightpad)</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn" onclick="closeLocalRomModal()">CANCEL</button>
-                <button class="btn btn-primary" onclick="launchLocalROM()">LAUNCH GAME</button>
-            </div>
-        </div>
-    </div>
+
 </body>
 </html>
