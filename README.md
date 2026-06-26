@@ -61,3 +61,19 @@ node server.js
 * **Monitor Screen:** Load `http://localhost:3000/tv.html` inside your desktop browser.
 * **Controller Interface:** Open `http://<YOUR_LOCAL_PC_IP>:3000/controller.html` on your phone's browser (make sure your phone is connected to the same home Wi-Fi network).
 * Press buttons on your phone layout to control Mario on your monitor screen with near-instant speed!
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                        GAMER UTILITY MACROS                            │
+├───────────────────────────────────┬────────────────────────────────────┤
+│ INPUT COMBINATION                 │ EMULATOR EVENT EXECUTED            │
+├───────────────────────────────────┼────────────────────────────────────┤
+│ • Hold SELECT + Press START       │ 💾 Save State (Instant RAM Dump)   │
+│ • Hold SELECT + Press MENU        │ ⏳ Load State (Instant Resume)     │
+│ • Hold SELECT + Press PAUSE       │ ⚡ Fast-Forward Toggle (Skip Grid) │
+│ • Hold START  + Press PAUSE       │ 🔄 Reset Core (Instant Reboot)     │
+│ • Hold SELECT + Press D-Pad UP    │ ⬆️ Increment Save Slot (Slots 0-9) │
+│ • Hold SELECT + Press D-Pad DOWN  │ ⬇️ Decrement Save Slot (Slots 0-9) │
+│ • Press PAUSE                     │ ⏸️ Pause Emulation Loop            │
+│ • Press MENU                      │ ⚙️ Toggle RetroArch Quick Menu GUI  │
+└───────────────────────────────────┴────────────────────────────────────┘
+
