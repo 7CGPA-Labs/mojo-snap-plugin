@@ -10,7 +10,7 @@ let tvCore = 'NES';
 let tvLayout = null;
 
 const SYSTEM_IP = getLocalIPAddress();
-const CONTROLLER_URL = `http://${SYSTEM_IP}:${PORT}/controller.html`;
+const CONTROLLER_URL = `${SYSTEM_IP}`;
 
 function dispatchPlayerStatusToTV() {
     if (tvSocket && tvSocket.readyState === 1) {
