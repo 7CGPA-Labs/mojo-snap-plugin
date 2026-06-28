@@ -5,15 +5,15 @@ const ApplicationState = {
     current: 'LOBBY', // 'LOBBY' | 'GAMEPLAY'
     isMenuOpen: false,
     isExiting: false,
-
-    enterGameplay: async function (game) {
+    
+    enterGameplay: async function(game) {
         this.current = 'GAMEPLAY';
         this.isMenuOpen = false;
         this.isExiting = false;
-
+        
         document.getElementById('lobby-view').style.display = 'none';
         document.getElementById('gameplay-view').style.display = 'flex';
-
+        
         const bgm = document.getElementById('lobby-audio');
         if (bgm) {
             bgm.muted = true;
@@ -25,24 +25,24 @@ const ApplicationState = {
         if (typeof window.socket !== 'undefined' && window.socket && window.socket.readyState === WebSocket.OPEN) {
             window.socket.send(JSON.stringify({ type: 'TV_STATE_CHANGE', state: 'GAMEPLAY', core: game.console, layout: game.layout }));
         }
-
+        
         loadROM(game);
     },
 
     // State Machine Tear-Down Protocol
-    exitGameplay: function () {
+    exitGameplay: function() {
         if (this.isExiting) return;
         this.isExiting = true;
 
         if (window.Module) {
-            try { window.Module.retroArchSend("QUIT"); } catch (e) { }
+            try { window.Module.retroArchSend("QUIT"); } catch (e) {}
         }
 
         this.current = 'LOBBY';
-
+        
         document.getElementById('gameplay-view').style.display = 'none';
         document.getElementById('lobby-view').style.display = 'flex';
-
+        
         window.onbeforeunload = null;
 
         // A full page reload is the most robust and reliable method to completely
@@ -59,7 +59,7 @@ function playLobbyMusic() {
     if (!bgm) return;
     if (ApplicationState.current !== 'LOBBY') return;
     if (!bgm.hasAttribute('src')) return; // Prevent playing if the source was destroyed
-
+    
     bgm.volume = 0.3; // 30% volume
     const playPromise = bgm.play();
     if (playPromise !== undefined) {
@@ -80,146 +80,291 @@ function openQrModal() {
     }
 }
 
-// 🎮 NATIVE HTML5 GAMEPAD MOCKING 🎮
-// Bypass browser KeyboardEvent security by spoofing physical hardware gamepads
-const virtualGamepads = [null, null, null, null];
+// 🎮 RAW KEYBOARD EVENT ROUTER & CUSTOM MENU CONTROLLER 🎮
 
-Object.defineProperty(navigator, 'getGamepads', {
-    value: () => virtualGamepads,
-    configurable: true
-});
-
-const gamepadMap = {
-    'B': 0, 'A': 1, 'Y': 2, 'X': 3,
-    'L1': 4, 'R1': 5, 'L2': 6, 'R2': 7,
-    'SELECT': 8, 'START': 9,
-    'UP': 12, 'DOWN': 13, 'LEFT': 14, 'RIGHT': 15
+const BUTTON_TO_KEY = {
+    1: { code: 'ArrowUp', key: 'ArrowUp', keyCode: 38 },
+    2: { code: 'ArrowDown', key: 'ArrowDown', keyCode: 40 },
+    3: { code: 'ArrowLeft', key: 'ArrowLeft', keyCode: 37 },
+    4: { code: 'ArrowRight', key: 'ArrowRight', keyCode: 39 },
+    5: { code: 'KeyZ', key: 'z', keyCode: 90 },
+    6: { code: 'KeyX', key: 'x', keyCode: 88 },
+    7: { code: 'KeyA', key: 'a', keyCode: 65 },
+    8: { code: 'KeyS', key: 's', keyCode: 83 },
+    9: { code: 'Enter', key: 'Enter', keyCode: 13 },
+    10: { code: 'ShiftRight', key: 'Shift', keyCode: 16 },
+    11: { code: 'Escape', key: 'Escape', keyCode: 27 },
+    12: { code: 'KeyP', key: 'p', keyCode: 80 }
 };
 
-function getOrCreateGamepad(index) {
-    if (!virtualGamepads[index]) {
-        virtualGamepads[index] = {
-            id: `Standard Gamepad (Virtual Controller ${index + 1})`,
-            index: index,
-            connected: true,
-            timestamp: performance.now(),
-            mapping: 'standard',
-            axes: [0, 0, 0, 0],
-            buttons: Array(18).fill(null).map(() => ({ pressed: false, touched: false, value: 0 }))
-        };
-        const ev = new Event('gamepadconnected');
-        ev.gamepad = virtualGamepads[index];
-        window.dispatchEvent(ev);
-    }
-    return virtualGamepads[index];
-}
+// Tracks button states per smartphone player slot (1 and 2)
+const controllerStates = {
+    1: Array(13).fill(false),
+    2: Array(13).fill(false)
+};
 
-function removeGamepad(index) {
-    if (virtualGamepads[index]) {
-        const ev = new Event('gamepaddisconnected');
-        ev.gamepad = virtualGamepads[index];
-        window.dispatchEvent(ev);
-        virtualGamepads[index] = null;
-    }
-}
+let isGameplayMenuOpen = false;
+let activeMenuIndex = 0;
+const menuOptions = ['resume', 'save', 'load', 'slot', 'restart', 'exit'];
+let currentSaveSlot = 1;
 
-function processControllerInput(player, button, action) {
-    if (ApplicationState.current !== 'GAMEPLAY') return;
+function updateGameplayMenuUI() {
+    const container = document.getElementById('menu-options-container');
+    if (!container) return;
 
-    const gamepadIndex = player - 1;
-    const pad = getOrCreateGamepad(gamepadIndex);
-    const isSelectPressed = pad && pad.buttons[gamepadMap['SELECT']] && pad.buttons[gamepadMap['SELECT']].pressed;
-    const isStartPressed = pad && pad.buttons[gamepadMap['START']] && pad.buttons[gamepadMap['START']].pressed;
-
-    // 1. MENU Button Logic (Toggle Quick Menu)
-    if (button === 'MENU' && action === 'DOWN') {
-        if (isSelectPressed) {
-            return; // Skip normal menu toggle if SELECT is held (since SELECT+MENU is LOAD_STATE macro)
-        }
-
-        if (window.Module && typeof window.Module.retroArchSend === 'function') {
-            ApplicationState.isMenuOpen = !ApplicationState.isMenuOpen;
-            console.log("[RetroArch] Triggering MENU_TOGGLE. Menu open:", ApplicationState.isMenuOpen);
-            window.Module.retroArchSend("MENU_TOGGLE");
-            if (!ApplicationState.isMenuOpen) {
-                setTimeout(() => {
-                    const canvas = document.getElementById('canvas');
-                    if (canvas) canvas.focus();
-                }, 50);
+    const items = container.querySelectorAll('.menu-item');
+    items.forEach((item, index) => {
+        const option = menuOptions[index];
+        if (index === activeMenuIndex) {
+            item.classList.add('active');
+            item.style.color = '#00a8e1';
+            item.style.border = '1px solid #00a8e1';
+            item.style.borderRadius = '4px';
+            item.style.background = 'rgba(0, 168, 225, 0.1)';
+            
+            if (option === 'slot') {
+                item.innerText = `> SAVE SLOT: [ ${currentSaveSlot} ] <`;
+            } else if (option === 'resume') {
+                item.innerText = `> RESUME GAME <`;
+            } else if (option === 'save') {
+                item.innerText = `> SAVE STATE <`;
+            } else if (option === 'load') {
+                item.innerText = `> LOAD STATE <`;
+            } else if (option === 'restart') {
+                item.innerText = `> RESTART GAME <`;
+            } else if (option === 'exit') {
+                item.innerText = `> EXIT GAME <`;
+            }
+        } else {
+            item.classList.remove('active');
+            item.style.color = option === 'exit' ? '#ff4a5a' : '#8197a4';
+            item.style.border = '1px solid transparent';
+            item.style.background = 'transparent';
+            
+            if (option === 'slot') {
+                item.innerText = `SAVE SLOT: [ ${currentSaveSlot} ]`;
+            } else if (option === 'resume') {
+                item.innerText = `RESUME GAME`;
+            } else if (option === 'save') {
+                item.innerText = `SAVE STATE`;
+            } else if (option === 'load') {
+                item.innerText = `LOAD STATE`;
+            } else if (option === 'restart') {
+                item.innerText = `RESTART GAME`;
+            } else if (option === 'exit') {
+                item.innerText = `EXIT GAME`;
             }
         }
-        return; // Prevent the menu key from being forwarded to the emulator core
-    }
+    });
+}
 
-    // 2. PAUSE Button Logic (Toggles Pause, Fast Forward, or Reset based on modifiers)
-    if (button === 'PAUSE' && action === 'DOWN') {
-        if (window.Module && typeof window.Module.retroArchSend === 'function') {
-            if (isSelectPressed) {
-                console.log("[RetroArch] Triggering FAST_FORWARD_TOGGLE");
-                window.Module.retroArchSend("FAST_FORWARD_TOGGLE");
-            } else if (isStartPressed) {
-                console.log("[RetroArch] Triggering RESET");
-                window.Module.retroArchSend("RESET");
-            } else {
-                console.log("[RetroArch] Triggering PAUSE_TOGGLE");
-                window.Module.retroArchSend("PAUSE_TOGGLE");
-            }
-        }
-        return;
+function openGameplayMenu() {
+    isGameplayMenuOpen = true;
+    activeMenuIndex = 0;
+    const overlay = document.getElementById('gameplay-menu-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    
+    // Send pause command to emulator core
+    if (window.Module && typeof window.Module.retroArchSend === 'function') {
+        window.Module.retroArchSend("PAUSE_TOGGLE");
     }
+    updateGameplayMenuUI();
+}
 
-    // 3. Save/Load State Macros (Forwarded from socket network.js macros)
-    if (button === 'SAVE_STATE' && action === 'DOWN') {
+function closeGameplayMenu() {
+    isGameplayMenuOpen = false;
+    const overlay = document.getElementById('gameplay-menu-overlay');
+    if (overlay) overlay.style.display = 'none';
+    
+    // Send unpause command to emulator core
+    if (window.Module && typeof window.Module.retroArchSend === 'function') {
+        window.Module.retroArchSend("PAUSE_TOGGLE");
+    }
+}
+
+function executeMenuOption(option) {
+    if (option === 'resume') {
+        closeGameplayMenu();
+    } else if (option === 'save') {
         if (window.Module && typeof window.Module.retroArchSend === 'function') {
-            console.log("[RetroArch] Triggering SAVE_STATE command");
             window.Module.retroArchSend("SAVE_STATE");
         }
-        return;
-    }
-
-    if (button === 'LOAD_STATE' && action === 'DOWN') {
+        closeGameplayMenu();
+    } else if (option === 'load') {
         if (window.Module && typeof window.Module.retroArchSend === 'function') {
-            console.log("[RetroArch] Triggering LOAD_STATE command");
             window.Module.retroArchSend("LOAD_STATE");
         }
-        return;
+        closeGameplayMenu();
+    } else if (option === 'slot') {
+        // Clicking slot option increments slot by default
+        currentSaveSlot = (currentSaveSlot % 9) + 1;
+        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+            window.Module.retroArchSend("STATE_SLOT_PLUS");
+        }
+        updateGameplayMenuUI();
+    } else if (option === 'restart') {
+        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+            window.Module.retroArchSend("RESET");
+        }
+        closeGameplayMenu();
+    } else if (option === 'exit') {
+        ApplicationState.exitGameplay();
+    }
+}
+
+function dispatchRetroArchKey(type, keyInfo) {
+    const ev = new KeyboardEvent(type, {
+        code: keyInfo.code,
+        key: keyInfo.key,
+        keyCode: keyInfo.keyCode,
+        which: keyInfo.keyCode,
+        bubbles: true,
+        cancelable: true,
+        view: window
+    });
+
+    window.dispatchEvent(ev);
+    document.dispatchEvent(ev);
+
+    const canvas = document.getElementById('canvas');
+    if (canvas) {
+        canvas.dispatchEvent(ev);
+    }
+}
+
+// Global hook called by network.js on receiving 3-byte binary packets
+function handleIncomingInputPacket(data) {
+    const view = new Uint8Array(data);
+    if (view.length !== 3) return;
+
+    const playerIndex = view[0];
+    const actionPhase = view[1]; // 1 = DOWN, 2 = UP
+    const buttonCode = view[2];  // 1 through 12
+
+    if (playerIndex < 1 || playerIndex > 2) return;
+    if (buttonCode < 1 || buttonCode > 12) return;
+
+    const isPressed = actionPhase === 1;
+    controllerStates[playerIndex][buttonCode] = isPressed;
+
+    // --- CASE A: TV Pause Menu is Currently Open ---
+    if (isGameplayMenuOpen) {
+        if (isPressed) {
+            if (buttonCode === 1) { // D-pad Up
+                activeMenuIndex = (activeMenuIndex - 1 + menuOptions.length) % menuOptions.length;
+                updateGameplayMenuUI();
+            } else if (buttonCode === 2) { // D-pad Down
+                activeMenuIndex = (activeMenuIndex + 1) % menuOptions.length;
+                updateGameplayMenuUI();
+            } else if (buttonCode === 3 || buttonCode === 4) { // D-pad Left/Right
+                const activeOption = menuOptions[activeMenuIndex];
+                if (activeOption === 'slot') {
+                    if (buttonCode === 3) { // Left
+                        currentSaveSlot = currentSaveSlot > 1 ? currentSaveSlot - 1 : 9;
+                        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                            window.Module.retroArchSend("STATE_SLOT_MINUS");
+                        }
+                    } else { // Right
+                        currentSaveSlot = currentSaveSlot < 9 ? currentSaveSlot + 1 : 1;
+                        if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                            window.Module.retroArchSend("STATE_SLOT_PLUS");
+                        }
+                    }
+                    updateGameplayMenuUI();
+                }
+            } else if (buttonCode === 5) { // Button A
+                const activeOption = menuOptions[activeMenuIndex];
+                executeMenuOption(activeOption);
+            } else if (buttonCode === 6 || buttonCode === 11 || buttonCode === 12) { // Button B, MENU, PAUSE
+                closeGameplayMenu();
+            }
+        }
+        return; // Absolute input muting while in menu
     }
 
-    // 4. Save Slot Switching (SELECT + D-pad UP/DOWN)
-    if (isSelectPressed && action === 'DOWN') {
-        if (button === 'UP') {
+    // --- CASE B: TV Pause Menu is Closed (Normal Gameplay) ---
+    const isSelectHeld = controllerStates[playerIndex][10] === true;
+
+    // Check Macro Chords
+    if (isPressed) {
+        // 1. SELECT + START (9) -> Save State Macro
+        if (buttonCode === 9 && isSelectHeld) {
+            if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                console.log("[RetroArch] Triggering SAVE_STATE command");
+                window.Module.retroArchSend("SAVE_STATE");
+            }
+            return;
+        }
+
+        // 2. SELECT + MENU (11) or SELECT + PAUSE (12) -> Load State Macro
+        if ((buttonCode === 11 || buttonCode === 12) && isSelectHeld) {
+            if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                console.log("[RetroArch] Triggering LOAD_STATE command");
+                window.Module.retroArchSend("LOAD_STATE");
+            }
+            return;
+        }
+
+        // 3. SELECT + D-Pad UP/DOWN -> Shift Save Registers (Slot +/-)
+        if (buttonCode === 1 && isSelectHeld) {
             if (window.Module && typeof window.Module.retroArchSend === 'function') {
                 console.log("[RetroArch] Triggering STATE_SLOT_PLUS");
                 window.Module.retroArchSend("STATE_SLOT_PLUS");
             }
-            return; // Block standard UP input
+            currentSaveSlot = (currentSaveSlot % 9) + 1;
+            return; // Mute UP movement
         }
-        if (button === 'DOWN') {
+        if (buttonCode === 2 && isSelectHeld) {
             if (window.Module && typeof window.Module.retroArchSend === 'function') {
                 console.log("[RetroArch] Triggering STATE_SLOT_MINUS");
                 window.Module.retroArchSend("STATE_SLOT_MINUS");
             }
-            return; // Block standard DOWN input
+            currentSaveSlot = currentSaveSlot > 1 ? currentSaveSlot - 1 : 9;
+            return; // Mute DOWN movement
         }
+
+        // 4. SELECT + D-Pad LEFT/RIGHT -> Mute movements entirely
+        if ((buttonCode === 3 || buttonCode === 4) && isSelectHeld) {
+            return;
+        }
+
+        // 5. Normal MENU Button (11) -> Open Gameplay Menu
+        if (buttonCode === 11) {
+            openGameplayMenu();
+            return;
+        }
+    } else {
+        // Release Chord Blocks
+        if (buttonCode === 9 && isSelectHeld) return;
+        if ((buttonCode === 11 || buttonCode === 12) && isSelectHeld) return;
+        if ((buttonCode === 1 || buttonCode === 2 || buttonCode === 3 || buttonCode === 4) && isSelectHeld) return;
     }
 
-    // STEP 4: Mobile Input Bridge -> Route to Native Gamepads
-    const btnIndex = gamepadMap[button];
-
-    if (btnIndex !== undefined) {
-        // Block normal START press to emulator if it is part of the macro combo
-        if (button === 'START' && action === 'DOWN') {
-            if (pad.buttons[gamepadMap['SELECT']].pressed) {
-                return;
-            }
-        }
-
-        const isPressed = action === 'DOWN';
-        pad.buttons[btnIndex].pressed = isPressed;
-        pad.buttons[btnIndex].value = isPressed ? 1 : 0;
-        pad.timestamp = performance.now();
+    // Normal Keyboard Translation and Dispatching
+    const keyInfo = BUTTON_TO_KEY[buttonCode];
+    if (keyInfo) {
+        const type = isPressed ? 'keydown' : 'keyup';
+        dispatchRetroArchKey(type, keyInfo);
     }
 }
+
+// Setup Magic Remote handler
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('menu-options-container');
+    if (container) {
+        container.addEventListener('click', (e) => {
+            const item = e.target.closest('.menu-item');
+            if (!item) return;
+            const option = item.getAttribute('data-option');
+            executeMenuOption(option);
+        });
+    }
+});
+
+// Mock gamepad functions for compatibility
+function getOrCreateGamepad(index) { return null; }
+function removeGamepad(index) {}
+function processControllerInput(player, button, action) {}
 
 // BrowserFS File System Persistent Store Bridge
 let afs = null;
@@ -282,13 +427,13 @@ function completeFSInitialization(afsInstance) {
 
         // Create required directory structures using Node-like API
         const fs = BrowserFS.BFSRequire('fs');
-        try { fs.mkdirSync('/home'); } catch (e) { }
-        try { fs.mkdirSync('/home/web_user'); } catch (e) { }
-        try { fs.mkdirSync('/home/web_user/retroarch'); } catch (e) { }
-        try { fs.mkdirSync('/home/web_user/retroarch/cores'); } catch (e) { }
-        try { fs.mkdirSync('/home/web_user/retroarch/userdata'); } catch (e) { }
-        try { fs.mkdirSync('/home/web_user/retroarch/userdata/saves'); } catch (e) { }
-        try { fs.mkdirSync('/home/web_user/retroarch/userdata/states'); } catch (e) { }
+        try { fs.mkdirSync('/home'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/cores'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata/saves'); } catch (e) {}
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata/states'); } catch (e) {}
 
         resolve(safeAfs);
     });
@@ -321,7 +466,7 @@ function writeConfig(consoleType) {
     const BrowserFS = window.BrowserFS;
     const fs = BrowserFS.BFSRequire('fs');
     const BufferClass = BrowserFS.BFSRequire('buffer').Buffer;
-
+    
     // WebOS TV-optimized configurations for 2D Sprite consoles (NES, SNES, Genesis)
     const cfgContent = `
 savefile_directory = "/home/web_user/retroarch/userdata/saves"
@@ -338,7 +483,6 @@ rewind_enable = "false"
 run_ahead_enabled = "false"
 video_max_swapchain_images = "2"
 video_aspect_ratio_auto = "true"
-video_scale_integer = "true"
     `;
 
     const optionsContent = `
@@ -351,7 +495,7 @@ picodrive_audio_filter = "disabled"
 picodrive_overclock = "disabled"
 picodrive_drc = "enabled"
     `;
-
+    
     const encoded = new TextEncoder().encode(cfgContent.trim());
     fs.writeFileSync('/home/web_user/retroarch/userdata/retroarch.cfg', BufferClass(encoded));
 
@@ -371,7 +515,7 @@ function writeROM(filename, arrayBuffer) {
 async function loadROM(game) {
     const gamePanel = document.getElementById('game-panel');
     if (!gamePanel) return;
-
+    
     // Display Retro console styled clean loading indicator
     gamePanel.innerHTML = `
         <div id="retroarch-loader" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b0e14; color: #00a8e1; font-family: 'Press Start 2P', monospace; font-size: 12px; gap: 20px;">
@@ -423,36 +567,36 @@ async function loadROM(game) {
 
         const localModule = {
             noInitialRun: true,
-            retroArchSend: function (msg) {
+            retroArchSend: function(msg) {
                 if (typeof this.EmscriptenSendCommand === 'function') {
                     this.EmscriptenSendCommand(msg);
                 } else {
                     console.warn("[RetroArch] EmscriptenSendCommand is not compiled in this core");
                 }
             },
-            retroArchRecv: function () {
+            retroArchRecv: function() {
                 return this.EmscriptenReceiveCommandReply ? this.EmscriptenReceiveCommandReply() : null;
             },
-            retroArchExit: function (core, content) {
+            retroArchExit: function(core, content) {
                 ApplicationState.exitGameplay();
             },
-            onRuntimeInitialized: function () {
+            onRuntimeInitialized: function() {
                 // runtime ready
             },
-            print: function (text) {
+            print: function(text) {
                 // suppress RetroArch stdout logs for performance
             },
-            printErr: function (text) {
+            printErr: function(text) {
                 // suppress RetroArch stderr logs for performance
             },
             canvas: canvas,
             parent: canvas.parentNode,
             arguments: [romPath, "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"],
             corePath: `/home/web_user/retroarch/cores/${core}_libretro.core`,
-            preRun: [function (mod) {
+            preRun: [function(mod) {
                 mod.ENV["LIBRARY_PATH"] = `/home/web_user/retroarch/cores/${core}_libretro.core`;
             }],
-            locateFile: function (path, prefix) {
+            locateFile: function(path, prefix) {
                 if (path.endsWith(".wasm")) {
                     return `/cores/${path}?cb=${Date.now()}`;
                 }

@@ -8,46 +8,41 @@ A high-performance, low-latency retro game emulation platform designed for packa
 
 ```text
 webos-retro-console/
-└── backend/                  <-- TV Static Assets & WebSocket Proxy Server
-    ├── server.js             <-- Node Express & WebSocket Bootstrapper
-    ├── package.json
-    ├── src/
-    │   ├── config/network.js <-- Port & IP Helper functions
-    │   └── network/
-    │       └── websocket.js  <-- Low-Latency Refereed Binary Stream Router
-    └── public/
-        ├── tv.html           <-- TV Smart Display Shell
-        ├── controller.html   <-- Smartphone Gamepad UI
-        ├── cores/            <-- RetroArch Core WebAssembly & JS Modules
-        ├── roms/             <-- Multi-System ROM Repository (NES, SNES, SEGA)
-        └── assets/
-            ├── css/
-            │   ├── common.css     <-- Shared display rules
-            │   └── controller.css <-- Mobile controller layout rules
-            └── js/
-                ├── network.js    <-- Bidirectional communication bridge
-                ├── gameplay.js   <-- KeyboardEvent translator & custom pause menu
-                └── gamepad.js    <-- Bounding-box multi-touch touch engine
+├── server.js             <-- Node Express & WebSocket Bootstrapper
+├── package.json
+├── src/
+│   ├── config/network.js <-- Port & IP Helper functions
+│   └── network/
+│       └── websocket.js  <-- Low-Latency Refereed Binary Stream Router
+└── public/
+    ├── tv.html           <-- TV Smart Display Shell
+    ├── controller.html   <-- Smartphone Gamepad UI
+    ├── cores/            <-- RetroArch Core WebAssembly & JS Modules
+    ├── roms/             <-- Multi-System ROM Repository (NES, SNES, SEGA)
+    └── assets/
+        ├── css/
+        │   ├── common.css     <-- Shared display rules
+        │   └── controller.css <-- Mobile controller layout rules
+        └── js/
+            ├── network.js    <-- Bidirectional communication bridge
+            ├── gameplay.js   <-- KeyboardEvent translator & custom pause menu
+            └── gamepad.js    <-- Bounding-box multi-touch touch engine
 ```
 
 ---
 
 ## 🛠️ Step-by-Step Launch Sequence
 
-1. Navigate into the `backend/` folder:
-   ```bash
-   cd backend
-   ```
-2. Install node dependencies:
+1. Install node dependencies:
    ```bash
    npm install
    ```
-3. Start the proxy server:
+2. Start the proxy server:
    ```bash
    node server.js
    ```
-4. Access the TV console on your desktop browser at `http://localhost:3000/tv.html` or build the directory as a packaged WebOS `.ipk` application.
-5. Scan the QR code displayed on the TV screen or open `http://<HOST_IP>:3000/controller.html` on your mobile phone's browser to connect.
+3. Access the TV console on your desktop browser at `http://localhost:3000/tv.html` or build the directory as a packaged WebOS `.ipk` application.
+4. Scan the QR code displayed on the TV screen or open `http://<HOST_IP>:3000/controller.html` on your mobile phone's browser to connect.
 
 ---
 
