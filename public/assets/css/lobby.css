@@ -96,11 +96,29 @@ body {
 }
 
 .deck-wrapper {
-    height: 55%;
+    height: 155px;
     position: relative;
     display: flex;
     align-items: center;
     width: 100%;
+    flex-shrink: 0;
+}
+
+#lobby-carousels-container {
+    height: 55%;
+    width: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-bottom: 20px;
+    box-sizing: border-box;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+#lobby-carousels-container::-webkit-scrollbar {
+    display: none;
 }
 
 .scroll-btn {

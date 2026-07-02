@@ -1,13 +1,16 @@
 // public/assets/js/lobby.js
 
 let libraryData = [];
+let consoleGroups = []; // Array of { console: string, games: Array }
+let activeRowIndex = 0;
+let activeColIndex = 0;
 
 // Dynamic Library Fetcher
 async function initializeLibrary() {
     const response = await fetch('/api/games');
     libraryData = await response.json();
     
-    // Initialize library by default sorting to Title (A-Z) and rendering the first item
+    // Initialize library by default sorting to Title (A-Z)
     sortLibrary('title_asc');
     
     // Attempt to start background music
@@ -41,91 +44,204 @@ function sortLibrary(criterion) {
     } else if (criterion === 'year_asc') {
         libraryData.sort((a, b) => {
             let ya = getYear(a.release); let yb = getYear(b.release);
-            if (ya === 0) ya = 9999; if (yb === 0) yb = 9999;
+            if (ya === 0) ya = 9999; if (yb === 99) yb = 9999;
             return ya - yb;
         });
     }
     
+    activeRowIndex = 0;
+    activeColIndex = 0;
     renderLibraryList();
-    updateHeroSpotlight(libraryData[0]); // Instantly push the first game's metadata to the Hero block
 }
 
-let activeGameIndex = 0;
-
 function renderLibraryList() {
-    const rowsDeck = document.getElementById('game-rows');
-    if (!rowsDeck) return;
-    rowsDeck.innerHTML = '';
-    
-    libraryData.forEach((game, index) => {
-        const item = document.createElement('div');
-        item.className = 'game-card';
-        if (index === activeGameIndex) {
-            item.classList.add('active');
+    const container = document.getElementById('lobby-carousels-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // Group sorted libraryData by Console Core
+    const groupsMap = {};
+    libraryData.forEach(game => {
+        const consoleKey = game.console ? game.console.toUpperCase() : 'NES';
+        if (!groupsMap[consoleKey]) {
+            groupsMap[consoleKey] = [];
         }
-        
-        if (game.image) {
-            item.innerHTML = `
-                <img src="${game.image}" alt="${game.title}" style="width: 100%; height: 100%; object-fit: cover;">
-                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 30, 0.85); padding: 8px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${game.title}</div>
-            `;
-        } else {
-            item.innerHTML = `<div style="padding: 10px;">${game.title}</div>`;
-        }
-        // Magic Remote Hover Interaction
-        item.onmouseenter = () => {
-            activeGameIndex = index;
-            highlightActiveGameCard();
-        };
-        item.onclick = () => {
-            if (typeof ApplicationState !== 'undefined') {
-                ApplicationState.enterGameplay(game);
-            }
-        };
-        rowsDeck.appendChild(item);
+        groupsMap[consoleKey].push(game);
     });
+
+    // Consistent console display order: NES first, then SNES, then SEGA
+    const consoleOrder = ['NES', 'SNES', 'SEGA'];
+    const keys = Object.keys(groupsMap).sort((a, b) => {
+        const ia = consoleOrder.indexOf(a);
+        const ib = consoleOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    consoleGroups = keys.map(key => ({
+        console: key,
+        games: groupsMap[key]
+    }));
+
+    if (consoleGroups.length === 0) return;
+
+    // Bounds checking
+    if (activeRowIndex >= consoleGroups.length) activeRowIndex = 0;
+    const activeRow = consoleGroups[activeRowIndex];
+    if (activeColIndex >= activeRow.games.length) activeColIndex = 0;
+
+    // Build carousels per core
+    consoleGroups.forEach((group, rIdx) => {
+        // Row title label
+        const header = document.createElement('div');
+        header.className = 'row-header';
+        header.style.cssText = "font-family: 'Press Start 2P', monospace; font-size: 8px; color: #00a8e1; margin-left: 60px; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px;";
+        
+        let label = `${group.console} CLASSICS`;
+        if (group.console === 'SEGA') label = 'SEGA GENESIS';
+        header.innerText = label;
+        container.appendChild(header);
+
+        // Deck wrapper
+        const deckWrapper = document.createElement('div');
+        deckWrapper.className = 'deck-wrapper';
+
+        // Left button
+        const btnLeft = document.createElement('button');
+        btnLeft.className = 'scroll-btn';
+        btnLeft.style.left = '10px';
+        btnLeft.innerText = '◀';
+        btnLeft.onclick = () => scrollConsoleDeck(group.console, -1);
+        deckWrapper.appendChild(btnLeft);
+
+        // Rows container
+        const curatedRows = document.createElement('div');
+        curatedRows.className = 'curated-rows';
+        curatedRows.id = `deck-${group.console}`;
+
+        // Populate cards
+        group.games.forEach((game, cIdx) => {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.setAttribute('data-row', rIdx);
+            card.setAttribute('data-col', cIdx);
+
+            if (rIdx === activeRowIndex && cIdx === activeColIndex) {
+                card.classList.add('active');
+            }
+
+            if (game.image) {
+                card.innerHTML = `
+                    <img src="${game.image}" alt="${game.title}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 30, 0.85); padding: 8px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${game.title}</div>
+                `;
+            } else {
+                card.innerHTML = `<div style="padding: 10px;">${game.title}</div>`;
+            }
+
+            // Mouse hover
+            card.onmouseenter = () => {
+                activeRowIndex = rIdx;
+                activeColIndex = cIdx;
+                highlightActiveGameCard();
+            };
+            card.onclick = () => {
+                if (typeof ApplicationState !== 'undefined') {
+                    ApplicationState.enterGameplay(game);
+                }
+            };
+            curatedRows.appendChild(card);
+        });
+
+        deckWrapper.appendChild(curatedRows);
+
+        // Right button
+        const btnRight = document.createElement('button');
+        btnRight.className = 'scroll-btn';
+        btnRight.style.right = '10px';
+        btnRight.innerText = '▶';
+        btnRight.onclick = () => scrollConsoleDeck(group.console, 1);
+        deckWrapper.appendChild(btnRight);
+
+        container.appendChild(deckWrapper);
+    });
+
+    const activeGame = consoleGroups[activeRowIndex].games[activeColIndex];
+    updateHeroSpotlight(activeGame);
 }
 
 function highlightActiveGameCard() {
     const cards = document.querySelectorAll('.game-card');
-    cards.forEach((card, index) => {
-        if (index === activeGameIndex) {
+    let activeCard = null;
+
+    cards.forEach(card => {
+        const r = parseInt(card.getAttribute('data-row'), 10);
+        const c = parseInt(card.getAttribute('data-col'), 10);
+
+        if (r === activeRowIndex && c === activeColIndex) {
             card.classList.add('active');
-            updateHeroSpotlight(libraryData[index]);
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            activeCard = card;
         } else {
             card.classList.remove('active');
         }
     });
+
+    if (activeCard) {
+        const activeGame = consoleGroups[activeRowIndex].games[activeColIndex];
+        updateHeroSpotlight(activeGame);
+        
+        // Scroll horizontally
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 }
 
-function navigateLobby(direction) {
-    if (libraryData.length === 0) return;
-    activeGameIndex = (activeGameIndex + direction + libraryData.length) % libraryData.length;
+function navigateLobby(rowOffset, colOffset) {
+    if (consoleGroups.length === 0) return;
+
+    if (rowOffset !== 0) {
+        activeRowIndex = (activeRowIndex + rowOffset + consoleGroups.length) % consoleGroups.length;
+        const numCols = consoleGroups[activeRowIndex].games.length;
+        if (activeColIndex >= numCols) {
+            activeColIndex = numCols - 1;
+        }
+    }
+
+    if (colOffset !== 0) {
+        const numCols = consoleGroups[activeRowIndex].games.length;
+        activeColIndex = (activeColIndex + colOffset + numCols) % numCols;
+    }
+
     highlightActiveGameCard();
 }
 
 function launchActiveGame() {
-    if (libraryData.length === 0) return;
-    if (typeof ApplicationState !== 'undefined') {
-        ApplicationState.enterGameplay(libraryData[activeGameIndex]);
+    if (consoleGroups.length === 0) return;
+    const game = consoleGroups[activeRowIndex].games[activeColIndex];
+    if (typeof ApplicationState !== 'undefined' && game) {
+        ApplicationState.enterGameplay(game);
     }
 }
 
-function scrollDeck(direction) {
-    const rowsDeck = document.getElementById('game-rows');
-    if (!rowsDeck) return;
-    const scrollAmount = 520; // Scroll past roughly two game cards at a time
-    rowsDeck.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+function scrollConsoleDeck(consoleName, direction) {
+    const deck = document.getElementById(`deck-${consoleName}`);
+    if (!deck) return;
+    const scrollAmount = 520;
+    deck.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
 }
 
 // Bind keyboard navigation in Lobby
 document.addEventListener('keydown', (e) => {
     if (typeof ApplicationState !== 'undefined' && ApplicationState.current === 'LOBBY') {
         if (e.key === 'ArrowLeft') {
-            navigateLobby(-1);
+            navigateLobby(0, -1);
         } else if (e.key === 'ArrowRight') {
-            navigateLobby(1);
+            navigateLobby(0, 1);
+        } else if (e.key === 'ArrowUp') {
+            navigateLobby(-1, 0);
+        } else if (e.key === 'ArrowDown') {
+            navigateLobby(1, 0);
         } else if (e.key === 'Enter' || e.key === 'z' || e.key === 'KeyZ') {
             launchActiveGame();
         }
