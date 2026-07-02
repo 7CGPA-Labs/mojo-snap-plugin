@@ -1,6 +1,6 @@
 # 🕹️ WebOS Retro Game Console Platform (Web Application)
 
-A high-performance, low-latency retro game emulation platform designed for packaged native LG webOS smart TVs. The system runs a vanilla RetroArch WebAssembly core rendering directly onto an unadorned WebGL canvas, driven by a Node.js WebSocket proxy and an HTML5/CSS3/JS mobile controller running in smartphone browsers over local Wi-Fi.
+A high-performance, low-latency retro game emulation platform designed for packaged native LG webOS smart TVs. The system runs a vanilla RetroArch WebAssembly core rendering directly onto an unadorned WebGL canvas, driven by a Node.js Express server to serve files, and controlled locally via physical USB/wireless gamepad controllers (using standard W3C Gamepad API) or a keyboard.
 
 ---
 
@@ -8,58 +8,53 @@ A high-performance, low-latency retro game emulation platform designed for packa
 
 ```text
 webos-retro-console/
-├── server.js             <-- Node Express & WebSocket Bootstrapper
+├── server.js              <-- Express static file server & ROM scanner API
 ├── package.json
-├── src/
-│   ├── config/network.js <-- Port & IP Helper functions
-│   └── network/
-│       └── websocket.js  <-- Low-Latency Refereed Binary Stream Router
 └── public/
-    ├── tv.html           <-- TV Smart Display Shell
-    ├── controller.html   <-- Smartphone Gamepad UI
-    ├── cores/            <-- RetroArch Core WebAssembly & JS Modules
-    ├── roms/             <-- Multi-System ROM Repository (NES, SNES, SEGA)
+    ├── tv.html            <-- Main display console shell view
+    ├── cores/             <-- RetroArch WebAssembly core libraries
+    ├── roms/              <-- ROM games directories (NES, SNES, SEGA)
     └── assets/
         ├── css/
-        │   ├── common.css     <-- Shared display rules
-        │   └── controller.css <-- Mobile controller layout rules
+        │   ├── common.css   <-- Base style definitions
+        │   ├── lobby.css    <-- Curation grid layout & card active states
+        │   └── gameplay.css <-- Emulation overlays & fixed status chips HUD
         └── js/
-            ├── network.js    <-- Bidirectional communication bridge
-            ├── gameplay.js   <-- KeyboardEvent translator & custom pause menu
-            └── gamepad.js    <-- Bounding-box multi-touch touch engine
+            ├── gameplay.js  <-- Gamepad polling, analog sticks parser, and HUD state manager
+            └── lobby.js     <-- Dynamic console group rows (NES, SNES, SEGA) & grid navigation
 ```
 
 ---
 
 ## 🛠️ Step-by-Step Launch Sequence
 
-1. Install node dependencies:
+1. Install local dependencies:
    ```bash
    npm install
    ```
-2. Start the proxy server:
+2. Start the Express server:
    ```bash
    node server.js
    ```
-3. Access the TV console on your desktop browser at `http://localhost:3000/tv.html` or build the directory as a packaged WebOS `.ipk` application.
-4. Scan the QR code displayed on the TV screen or open `http://<HOST_IP>:3000/controller.html` on your mobile phone's browser to connect.
+3. Open `http://localhost:3000/tv.html` in your web browser.
+4. Plug in a standard 2.4G physical gamepad (Xbox, PlayStation, 8BitDo, or similar). The top-right HUD will update to show `P1: GP1` indicating your gamepad is active and mapped!
 
 ---
 
-## 🎮 Controller Actions & Macros
+## 🎮 Navigation & Gamepad Bindings
 
-### Custom Pause Menu Navigation
-When in a game, press the **MENU** button on the mobile controller to pause emulation and open the custom TV gameplay overlay.
-* **D-pad UP / DOWN**: Change menu option selection.
-* **D-pad LEFT / RIGHT**: Toggle save slot registers (Slots 1-9) when hovering over the "SAVE SLOT" option.
-* **Button A**: Select / execute the active option.
-* **Button B / MENU / PAUSE**: Close the pause menu.
+### Lobby Game Selection
+- **D-pad Left / Right (or Left/Right Arrows)**: Move selection card horizontally within the active core shelf.
+- **D-pad Up / Down (or Up/Down Arrows)**: Move selection focus vertically between emulator core rows.
+- **Button A (or Enter / KeyZ)**: Launch the focused game console.
 
-### Hotkey Macros (Gameplay Mode)
-The following macro chords can be executed during active gameplay:
-* **Hold SELECT + Press START**: Save game state instantly.
-* **Hold SELECT + Press MENU or PAUSE**: Load game state instantly.
-* **Hold SELECT + Press D-pad UP**: Shift save slot register up (mutes movement).
-* **Hold SELECT + Press D-pad DOWN**: Shift save slot register down (mutes movement).
-* **Hold SELECT + Press D-pad LEFT/RIGHT**: Mute character movements.
-
+### Emulation Gameplay Bindings
+- **D-pad / Left Stick**: Move character / Direction inputs.
+- **Button A / Cross**: Z key (RetroArch B)
+- **Button B / Circle**: X key (RetroArch A)
+- **Button X / Square**: A key (RetroArch Y)
+- **Button Y / Triangle**: S key (RetroArch X)
+- **Select**: Shift (Select)
+- **Start**: Enter (Start)
+- **L1 / Home**: Toggle custom Pause Menu overlay.
+- **R1**: Pause emulation.
