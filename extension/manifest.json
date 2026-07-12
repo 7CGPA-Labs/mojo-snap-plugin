@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Retro Console",
+  "version": "1.0.0",
+  "description": "Play your local retro games directly in your browser with physical gamepad mapping.",
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "shared/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

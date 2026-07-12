@@ -1,63 +1,60 @@
-# 🕹️ Retro Web Console Sandbox
+# 🕹️ Retro Console Platform
 
-A high-performance, low-latency retro game emulation pipeline. This console features a Prime Video-style streaming lobby, dynamic multi-touch smartphone controllers, and an ultra-fast binary WebSocket engine supporting multiple systems (NES, SNES, Genesis, GBA).
+A high-performance, serverless, and cross-platform retro game emulation platform. The system runs standard RetroArch WebAssembly cores rendering directly onto a WebGL canvas with support for local USB/Bluetooth gamepads.
 
-## 🛠️ Step-by-Step Launch Sequence
+This project is organized as a **monorepo** supporting three distribution targets from a single client codebase:
+1. **Cross-Browser WebExtension** (Chrome, Edge, Firefox using Manifest V3).
+2. **Media Server Plugin** (Emby and Jellyfin C# .NET plugins).
+3. **Static Web App** (GitHub Pages).
 
-### 1. Structure the Project
-Your project folder should match this hierarchy to utilize the dynamic ROM scanner:
+---
+
+## 📂 Project Architecture
+
 ```text
-retro-web-console/
-├── server.js
-├── package.json
-└── public/
-    ├── tv.html
-    ├── controller.html
-    ├── inputWorker.js
-    ├── api.js
-    ├── assets/
-    │   ├── logo96.png
-    │   ├── audio/
-    │   │   └── lobby.mp3        <-- Background music
-    │   ├── favicon/
-    │   │   └── favicon32.png    <-- App Icon
-    │   ├── css/
-    │   │   ├── common.css       <-- Global resets, shared QR popup styles
-    │   │   ├── lobby.css        <-- Prime Video-style catalog layout
-    │   │   └── gameplay.css     <-- Active split view & EJS cleaner rules
-    │   └── js/
-    │       ├── network.js       <-- Unified WS communication & worker ingestion proxy
-    │       ├── gameplay.js      <-- TV-side state machine, ROM loaders, gamepad spoofers
-    │       ├── lobby.js         <-- TV-side game library loads, filters, & spotlight rendering
-    │       ├── gamepad.js       <-- Mobile-side touch parsing, coordinates, & dynamic layouts
-    │       └── emulatorjs/      <-- Extracted offline emulator files
-    └── roms/
-        ├── nes/
-        │   ├── mario.nes    <-- Game ROM
-        │   ├── mario.png    <-- Box Art / Splash Image
-        │   └── mario.json   <-- Game Metadata
-        ├── snes/
-        └── sega/
-        
+webos-retro-console/
+├── build_extension.ps1    <-- Packages browser WebExtension
+├── build_plugin.ps1       <-- Compiles Emby/Jellyfin C# plugin assembly
+├── shared/                <-- Common client gaming engine & WASM cores
+│   ├── cores/             <-- WASM retro cores (fceumm, snes9x, picodrive)
+│   └── assets/            <-- Shared styling and input mappings
+│
+├── extension/             <-- Browser Extension (Manifest V3)
+│   ├── manifest.json
+│   ├── popup.html         <-- Toolbar popup
+│   └── tv.html            <-- Viewport with local file loader & options sidebar
+│
+├── media-plugin/          <-- Emby/Jellyfin .NET Plugin
+│   ├── plugin.csproj
+│   ├── Plugin.cs
+│   └── Web/
+│       └── play.html      <-- Client player view displaying only WebGL canvas
+│
+└── docs/                  <-- Target 3: Static GitHub Pages deployment
 ```
 
-### 2. Supply the Game File
+---
 
-1. Mount the MicroSD card from your **Game Stick Lite** into your PC.
-2. Search inside the `NES` or `FC` directory for a Super Mario Bros game file.
-3. Move that file into your project's `public/roms/nes/` directory and rename it exactly to: `mario.nes` (alongside matching `mario.png` and `mario.json` if available).
+## 🛠️ Build & Package Instructions
 
-### 3. Initialize & Start
-
-Open a terminal in the root folder and run:
-
-```bash
-npm install express ws qrcode emulatorjs @fontsource/press-start-2p
-node server.js
+### 1. WebExtension Package
+Open PowerShell at the root and run:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_extension.ps1
 ```
+The packaged archive will output to `dist/extension.zip`. Unzip it and load it in Chrome (`chrome://extensions/` -> Enable Developer Mode -> "Load unpacked").
 
-### 4. Play the Simulation
+### 2. Emby/Jellyfin Media Server Plugin
+Ensure you have .NET Core SDK 6.0+ installed, then open PowerShell and run:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_plugin.ps1
+```
+The compiled DLL assembly will output to `dist/media-plugin/`. Copy `RetroConsolePlugin.dll` to your server's `plugins/` folder and restart the server.
 
-* **Monitor Screen:** Load `http://localhost:3000/tv.html` inside your desktop browser.
-* **Controller Interface:** Open `http://<YOUR_LOCAL_PC_IP>:3000/controller.html` on your phone's browser (make sure your phone is connected to the same home Wi-Fi network).
-* Press buttons on your phone layout to control Mario on your monitor screen with near-instant speed!
+---
+
+## 🌐 Static Web App (GitHub Pages)
+
+You can play ROMs directly in your browser without installing any files. Access the live static console page hosted on **GitHub Pages** (configured to serve from the `/docs` directory).
+- **ROM Loading**: Click the `SELECT ROM` button or drag-and-drop a `.nes`, `.sfc`, or `.bin` file directly onto the screen.
+- **Save States & Key Remapping**: All configs, controller binds, and game saves are persisted locally inside the browser's IndexedDB storage.
