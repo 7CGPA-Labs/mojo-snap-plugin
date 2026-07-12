@@ -3,6 +3,7 @@
   "name": "Retro Console",
   "version": "1.0.0",
   "description": "Play your local retro games directly in your browser with physical gamepad mapping.",
+  "author": "7CGPA-Labs",
   "permissions": [
     "storage"
   ],

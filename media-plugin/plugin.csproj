@@ -4,6 +4,9 @@
     <AssemblyName>RetroConsolePlugin</AssemblyName>
     <RootNamespace>RetroConsolePlugin</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Authors>7CGPA-Labs</Authors>
+    <Company>7CGPA-Labs</Company>
+    <Copyright>Copyright © 7CGPA-Labs 2026</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.8.10" PrivateAssets="All" />
