@@ -33,7 +33,7 @@ namespace RetroConsolePlugin.Api
         [HttpGet("Save/{id}")]
         public IActionResult GetSaveState(Guid id)
         {
-            var pluginDir = Plugin.Instance.ConfigurationDirectoryPath;
+            var pluginDir = Path.GetDirectoryName(Plugin.Instance.ConfigurationFilePath);
             var savePath = Path.Combine(pluginDir, $"{id}.srm");
             
             if (!System.IO.File.Exists(savePath))
@@ -48,7 +48,7 @@ namespace RetroConsolePlugin.Api
         [HttpPost("Save/{id}")]
         public async Task<IActionResult> PostSaveState(Guid id)
         {
-            var pluginDir = Plugin.Instance.ConfigurationDirectoryPath;
+            var pluginDir = Path.GetDirectoryName(Plugin.Instance.ConfigurationFilePath);
             var savePath = Path.Combine(pluginDir, $"{id}.srm");
 
             using (var ms = new MemoryStream())
