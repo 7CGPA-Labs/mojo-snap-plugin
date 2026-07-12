@@ -1,8 +1,0 @@
-{
-  "title": "Tetris",
-  "console": "NES",
-  "layout": "NES",
-  "image": "tetris.png",
-  "description": "The classic block-stacking puzzle game that took the world by storm. Arrange the falling Tetriminos to clear lines and score points.",
-  "release": "1989"
-}

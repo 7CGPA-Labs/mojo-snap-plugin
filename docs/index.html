@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Retro Console Dashboard</title>
+    <link href="/fonts/press-start-2p/index.css" rel="stylesheet">
+    <link href="tv.css" rel="stylesheet">
+    <script src="shared/cores/browserfs.min.js" defer></script>
+    <script src="shared/assets/js/gameplay.js" defer></script>
+</head>
+<body>
+
+    <!-- Header bar -->
+    <div class="top-nav">
+        <span class="logo">🕹️ RETRO CONSOLE</span>
+        <button class="settings-trigger" id="settings-toggle">⚙️ SETTINGS</button>
+    </div>
+
+    <!-- Active viewport -->
+    <div class="viewport-wrapper">
+        <div id="game-panel">
+            <div id="file-drop-zone">
+                <div class="glow-icon">💿</div>
+                <div class="drop-title">DRAG & DROP ROM FILE</div>
+                <div class="drop-sub">Supports NES, SNES, and SEGA formats</div>
+                <div style="margin: 15px 0; color: #555; font-size: 10px;">- OR -</div>
+                <input type="file" id="rom-select" style="display:none;" accept=".nes,.sfc,.smc,.bin,.md,.gen">
+                <label for="rom-select" class="btn-select">[SELECT ROM]</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Settings panel -->
+    <div class="settings-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>QUICK SETTINGS</span>
+            <button class="close-btn" id="sidebar-close">&times;</button>
+        </div>
+
+        <div class="sidebar-content">
+            <!-- Emulation Controls -->
+            <div class="control-group">
+                <label class="group-label">EMULATION CONTROLS</label>
+                <div class="btn-row">
+                    <button class="control-btn" id="btn-reset">RESET</button>
+                    <button class="control-btn" id="btn-pause">PAUSE</button>
+                </div>
+            </div>
+
+            <!-- Save States -->
+            <div class="control-group">
+                <label class="group-label">SAVE STATES</label>
+                <div class="save-slot-row">
+                    <span>SLOT:</span>
+                    <select id="save-slot">
+                        <option value="1">SLOT 1</option>
+                        <option value="2">SLOT 2</option>
+                        <option value="3">SLOT 3</option>
+                        <option value="4">SLOT 4</option>
+                        <option value="5">SLOT 5</option>
+                    </select>
+                </div>
+                <div class="btn-row">
+                    <button class="control-btn" id="btn-save-state">SAVE STATE</button>
+                    <button class="control-btn" id="btn-load-state">LOAD STATE</button>
+                </div>
+            </div>
+
+            <!-- Video settings -->
+            <div class="control-group">
+                <label class="group-label">VIDEO OUTPUT</label>
+                <div class="select-row">
+                    <span>ASPECT RATIO:</span>
+                    <select id="video-aspect">
+                        <option value="stretch">STRETCH (FULL)</option>
+                        <option value="4-3">4:3 (STANDARD)</option>
+                        <option value="16-9">16:9 (WIDESCREEN)</option>
+                    </select>
+                </div>
+                <div class="select-row">
+                    <span>FILTERING:</span>
+                    <select id="video-filter">
+                        <option value="nearest">NEAREST (PIXEL)</option>
+                        <option value="linear">LINEAR (SMOOTH)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Audio settings -->
+            <div class="control-group">
+                <label class="group-label">AUDIO OUTPUT</label>
+                <div class="volume-row">
+                    <input type="range" id="audio-volume" min="0" max="10" value="8">
+                    <button class="control-btn" id="btn-mute" style="width: auto; padding: 4px 8px;">MUTE</button>
+                </div>
+            </div>
+
+            <!-- Cheat code injection -->
+            <div class="control-group">
+                <label class="group-label">CHEAT CODES</label>
+                <input type="text" id="cheat-code" placeholder="ENTER GG/PAR CODE" class="text-input">
+                <button class="control-btn" id="btn-apply-cheat" style="margin-top: 5px;">APPLY CHEAT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Overlay Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const romSelect = document.getElementById('rom-select');
+            const dropZone = document.getElementById('file-drop-zone');
+            const settingsToggle = document.getElementById('settings-toggle');
+            const sidebarClose = document.getElementById('sidebar-close');
+            const sidebar = document.getElementById('sidebar');
+
+            // Toggle Settings Sidebar
+            settingsToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+
+            sidebarClose.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+            });
+
+            // Local File Picking
+            romSelect.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    bootLocalRom(e.target.files[0]);
+                }
+            });
+
+            // Drag & Drop
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#00a8e1';
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = '#1a242f';
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length > 0) {
+                    bootLocalRom(e.dataTransfer.files[0]);
+                }
+            });
+
+            function bootLocalRom(file) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                let consoleType = 'NES';
+                if (ext === 'sfc' || ext === 'smc' || ext === 'fig') {
+                    consoleType = 'SNES';
+                } else if (ext === 'bin' || ext === 'md' || ext === 'gen') {
+                    consoleType = 'SEGA';
+                }
+
+                const objectUrl = URL.createObjectURL(file);
+                const gameConfig = {
+                    console: consoleType,
+                    path: objectUrl,
+                    filename: file.name,
+                    title: file.name.replace(/\.[^/.]+$/, "")
+                };
+
+                if (typeof window.loadROM === 'function') {
+                    window.loadROM(gameConfig);
+                } else {
+                    console.error("[Retro Console] loadROM function not loaded yet!");
+                }
+            }
+
+            // Bind Video Aspect Settings
+            const videoAspect = document.getElementById('video-aspect');
+            videoAspect.addEventListener('change', (e) => {
+                const canvas = document.getElementById('canvas');
+                if (!canvas) return;
+                if (e.target.value === 'stretch') {
+                    canvas.style.aspectRatio = 'auto';
+                } else if (e.target.value === '4-3') {
+                    canvas.style.aspectRatio = '4/3';
+                } else if (e.target.value === '16-9') {
+                    canvas.style.aspectRatio = '16/9';
+                }
+            });
+
+            // Bind Video Filtering Settings
+            const videoFilter = document.getElementById('video-filter');
+            videoFilter.addEventListener('change', (e) => {
+                const canvas = document.getElementById('canvas');
+                if (!canvas) return;
+                if (e.target.value === 'nearest') {
+                    canvas.style.imageRendering = 'pixelated';
+                } else {
+                    canvas.style.imageRendering = 'auto';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
