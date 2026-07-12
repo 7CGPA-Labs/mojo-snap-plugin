@@ -1,6 +1,11 @@
-# 🕹️ WebOS Retro Game Console Platform (Web Application)
+# 🕹️ Retro Console Platform
 
-A high-performance, low-latency retro game emulation platform designed for packaged native LG webOS smart TVs. The system runs a vanilla RetroArch WebAssembly core rendering directly onto an unadorned WebGL canvas, driven by a Node.js Express server to serve files, and controlled locally via physical USB/wireless gamepad controllers (using standard W3C Gamepad API) or a keyboard.
+A high-performance, serverless, and cross-platform retro game emulation platform. The system runs standard RetroArch WebAssembly cores rendering directly onto a WebGL canvas with support for local USB/Bluetooth gamepads.
+
+This project is organized as a **monorepo** supporting three distribution targets from a single client codebase:
+1. **Cross-Browser WebExtension** (Chrome, Edge, Firefox using Manifest V3).
+2. **Media Server Plugin** (Emby and Jellyfin C# .NET plugins).
+3. **Static Web App** (GitHub Pages).
 
 ---
 
@@ -8,53 +13,48 @@ A high-performance, low-latency retro game emulation platform designed for packa
 
 ```text
 webos-retro-console/
-├── server.js              <-- Express static file server & ROM scanner API
-├── package.json
-└── public/
-    ├── tv.html            <-- Main display console shell view
-    ├── cores/             <-- RetroArch WebAssembly core libraries
-    ├── roms/              <-- ROM games directories (NES, SNES, SEGA)
-    └── assets/
-        ├── css/
-        │   ├── common.css   <-- Base style definitions
-        │   ├── lobby.css    <-- Curation grid layout & card active states
-        │   └── gameplay.css <-- Emulation overlays & fixed status chips HUD
-        └── js/
-            ├── gameplay.js  <-- Gamepad polling, analog sticks parser, and HUD state manager
-            └── lobby.js     <-- Dynamic console group rows (NES, SNES, SEGA) & grid navigation
+├── build_extension.ps1    <-- Packages browser WebExtension
+├── build_plugin.ps1       <-- Compiles Emby/Jellyfin C# plugin assembly
+├── shared/                <-- Common client gaming engine & WASM cores
+│   ├── cores/             <-- WASM retro cores (fceumm, snes9x, picodrive)
+│   └── assets/            <-- Shared styling and input mappings
+│
+├── extension/             <-- Browser Extension (Manifest V3)
+│   ├── manifest.json
+│   ├── popup.html         <-- Toolbar popup
+│   └── tv.html            <-- Viewport with local file loader & options sidebar
+│
+├── media-plugin/          <-- Emby/Jellyfin .NET Plugin
+│   ├── plugin.csproj
+│   ├── Plugin.cs
+│   └── Web/
+│       └── play.html      <-- Client player view displaying only WebGL canvas
+│
+└── docs/                  <-- Target 3: Static GitHub Pages deployment
 ```
 
 ---
 
-## 🛠️ Step-by-Step Launch Sequence
+## 🛠️ Build & Package Instructions
 
-1. Install local dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the Express server:
-   ```bash
-   node server.js
-   ```
-3. Open `http://localhost:3000/tv.html` in your web browser.
-4. Plug in a standard 2.4G physical gamepad (Xbox, PlayStation, 8BitDo, or similar). The top-right HUD will update to show `P1: GP1` indicating your gamepad is active and mapped!
+### 1. WebExtension Package
+Open PowerShell at the root and run:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_extension.ps1
+```
+The packaged archive will output to `dist/extension.zip`. Unzip it and load it in Chrome (`chrome://extensions/` -> Enable Developer Mode -> "Load unpacked").
+
+### 2. Emby/Jellyfin Media Server Plugin
+Ensure you have .NET Core SDK 6.0+ installed, then open PowerShell and run:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_plugin.ps1
+```
+The compiled DLL assembly will output to `dist/media-plugin/`. Copy `RetroConsolePlugin.dll` to your server's `plugins/` folder and restart the server.
 
 ---
 
-## 🎮 Navigation & Gamepad Bindings
+## 🌐 Static Web App (GitHub Pages)
 
-### Lobby Game Selection
-- **D-pad Left / Right (or Left/Right Arrows)**: Move selection card horizontally within the active core shelf.
-- **D-pad Up / Down (or Up/Down Arrows)**: Move selection focus vertically between emulator core rows.
-- **Button A (or Enter / KeyZ)**: Launch the focused game console.
-
-### Emulation Gameplay Bindings
-- **D-pad / Left Stick**: Move character / Direction inputs.
-- **Button A / Cross**: Z key (RetroArch B)
-- **Button B / Circle**: X key (RetroArch A)
-- **Button X / Square**: A key (RetroArch Y)
-- **Button Y / Triangle**: S key (RetroArch X)
-- **Select**: Shift (Select)
-- **Start**: Enter (Start)
-- **L1 / Home**: Toggle custom Pause Menu overlay.
-- **R1**: Pause emulation.
+You can play ROMs directly in your browser without installing any files. Access the live static console page hosted on **GitHub Pages** (configured to serve from the `/docs` directory).
+- **ROM Loading**: Click the `SELECT ROM` button or drag-and-drop a `.nes`, `.sfc`, or `.bin` file directly onto the screen.
+- **Save States & Key Remapping**: All configs, controller binds, and game saves are persisted locally inside the browser's IndexedDB storage.
