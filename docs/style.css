@@ -1,0 +1,232 @@
+/* docs/style.css */
+
+:root {
+    --bg-color: #08090f;
+    --card-bg: rgba(25, 30, 45, 0.4);
+    --border-color: rgba(0, 168, 225, 0.15);
+    --primary-color: #00a8e1;
+    --text-color: #f0f3f8;
+    --text-muted: #8e9bb0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    position: relative;
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+/* Background glowing orb */
+.orb-bg {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 168, 225, 0.12) 0%, rgba(8, 9, 15, 0) 70%);
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+/* Header */
+header {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary-color);
+    letter-spacing: 2px;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 80px 0 60px 0;
+}
+
+h1 {
+    font-size: 48px;
+    font-weight: 800;
+    margin: 0 0 15px 0;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 30%, var(--primary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: 20px;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0 0 25px 0;
+}
+
+.description {
+    max-width: 650px;
+    margin: 0 auto 40px auto;
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 28px;
+    border-radius: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    box-shadow: 0 4px 14px rgba(0, 168, 225, 0.3);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(0, 168, 225, 0.45);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 168, 225, 0.05);
+}
+
+/* Features */
+.features {
+    padding: 60px 0;
+}
+
+h2 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 40px;
+    color: #fff;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 30px 20px;
+    transition: border-color 0.3s, transform 0.3s;
+    backdrop-filter: blur(10px);
+}
+
+.card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+}
+
+.card-icon {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    color: #fff;
+}
+
+.card p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Setup Guide */
+.setup {
+    padding: 60px 0 80px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.setup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px;
+}
+
+.setup-col h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    color: var(--primary-color);
+}
+
+ol {
+    padding-left: 20px;
+    margin: 0;
+    color: var(--text-muted);
+}
+
+li {
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+code {
+    background: rgba(0, 168, 225, 0.1);
+    color: var(--primary-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 40px 0;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+@media(max-width: 600px) {
+    h1 { font-size: 36px; }
+    .cta-buttons { flex-direction: column; gap: 15px; }
+    .btn { text-align: center; }
+}

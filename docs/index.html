@@ -1,201 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Retro Console Dashboard</title>
-    <link href="/fonts/press-start-2p/index.css" rel="stylesheet">
-    <link href="tv.css" rel="stylesheet">
-    <script src="shared/cores/browserfs.min.js" defer></script>
-    <script src="shared/assets/js/gameplay.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Console Platform - Serverless Emulation</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Header bar -->
-    <div class="top-nav">
-        <span class="logo">🕹️ RETRO CONSOLE</span>
-        <button class="settings-trigger" id="settings-toggle">⚙️ SETTINGS</button>
+    <!-- Gradient Background Orb -->
+    <div class="orb-bg"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">🕹️ RETRO CONSOLE</div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Retro Console Platform</h1>
+            <p class="subtitle">Play local retro classics anywhere. Completely serverless.</p>
+            <p class="description">
+                A high-performance emulation platform running vanilla RetroArch WebAssembly cores directly in your browser. Restructured as a monorepo to power cross-browser extensions and media server plugins from a single client codebase.
+            </p>
+            <div class="cta-buttons">
+                <a href="https://github.com/GaganCJ/webos-retro-console/archive/refs/heads/main.zip" class="btn btn-primary">Download Extension</a>
+                <a href="https://github.com/GaganCJ/webos-retro-console/archive/refs/heads/main.zip" class="btn btn-secondary">Get Media Plugin</a>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features">
+            <h2>Core Features</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">⚡</div>
+                    <h3>WebAssembly Powered</h3>
+                    <p>Runs fceumm, snes9x, and picodrive cores locally inside client browsers with native speed.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🎮</div>
+                    <h3>Universal Gamepads</h3>
+                    <p>Auto-detects USB and Bluetooth controllers via the standard W3C Gamepad API.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📁</div>
+                    <h3>Zero Server Overhead</h3>
+                    <p>Load ROM files locally from your system; no game files are hosted or bundled in the package.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⚙️</div>
+                    <h3>RetroArch Controls</h3>
+                    <p>Remap gamepad buttons, load cheats, and manage save states locally in browser IndexedDB storage.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Setup -->
+        <section class="setup">
+            <h2>Quick Installation</h2>
+            <div class="setup-grid">
+                <div class="setup-col">
+                    <h3>Chrome/Edge Extension</h3>
+                    <ol>
+                        <li>Download the repository and run <code>build_extension.ps1</code>.</li>
+                        <li>Open <code>chrome://extensions</code>.</li>
+                        <li>Enable <strong>Developer Mode</strong>.</li>
+                        <li>Click <strong>Load unpacked</strong> and select the extension build.</li>
+                    </ol>
+                </div>
+                <div class="setup-col">
+                    <h3>Emby/Jellyfin Plugin</h3>
+                    <ol>
+                        <li>Compile the plugin project using <code>build_plugin.ps1</code>.</li>
+                        <li>Copy the compiled DLL into your server's <code>plugins/</code> folder.</li>
+                        <li>Restart your media server and view games natively in your library.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 Retro Console Project. Distributed under the MIT License.</p>
+        </footer>
     </div>
 
-    <!-- Active viewport -->
-    <div class="viewport-wrapper">
-        <div id="game-panel">
-            <div id="file-drop-zone">
-                <div class="glow-icon">💿</div>
-                <div class="drop-title">DRAG & DROP ROM FILE</div>
-                <div class="drop-sub">Supports NES, SNES, and SEGA formats</div>
-                <div style="margin: 15px 0; color: #555; font-size: 10px;">- OR -</div>
-                <input type="file" id="rom-select" style="display:none;" accept=".nes,.sfc,.smc,.bin,.md,.gen">
-                <label for="rom-select" class="btn-select">[SELECT ROM]</label>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sidebar Settings panel -->
-    <div class="settings-sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <span>QUICK SETTINGS</span>
-            <button class="close-btn" id="sidebar-close">&times;</button>
-        </div>
-
-        <div class="sidebar-content">
-            <!-- Emulation Controls -->
-            <div class="control-group">
-                <label class="group-label">EMULATION CONTROLS</label>
-                <div class="btn-row">
-                    <button class="control-btn" id="btn-reset">RESET</button>
-                    <button class="control-btn" id="btn-pause">PAUSE</button>
-                </div>
-            </div>
-
-            <!-- Save States -->
-            <div class="control-group">
-                <label class="group-label">SAVE STATES</label>
-                <div class="save-slot-row">
-                    <span>SLOT:</span>
-                    <select id="save-slot">
-                        <option value="1">SLOT 1</option>
-                        <option value="2">SLOT 2</option>
-                        <option value="3">SLOT 3</option>
-                        <option value="4">SLOT 4</option>
-                        <option value="5">SLOT 5</option>
-                    </select>
-                </div>
-                <div class="btn-row">
-                    <button class="control-btn" id="btn-save-state">SAVE STATE</button>
-                    <button class="control-btn" id="btn-load-state">LOAD STATE</button>
-                </div>
-            </div>
-
-            <!-- Video settings -->
-            <div class="control-group">
-                <label class="group-label">VIDEO OUTPUT</label>
-                <div class="select-row">
-                    <span>ASPECT RATIO:</span>
-                    <select id="video-aspect">
-                        <option value="stretch">STRETCH (FULL)</option>
-                        <option value="4-3">4:3 (STANDARD)</option>
-                        <option value="16-9">16:9 (WIDESCREEN)</option>
-                    </select>
-                </div>
-                <div class="select-row">
-                    <span>FILTERING:</span>
-                    <select id="video-filter">
-                        <option value="nearest">NEAREST (PIXEL)</option>
-                        <option value="linear">LINEAR (SMOOTH)</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Audio settings -->
-            <div class="control-group">
-                <label class="group-label">AUDIO OUTPUT</label>
-                <div class="volume-row">
-                    <input type="range" id="audio-volume" min="0" max="10" value="8">
-                    <button class="control-btn" id="btn-mute" style="width: auto; padding: 4px 8px;">MUTE</button>
-                </div>
-            </div>
-
-            <!-- Cheat code injection -->
-            <div class="control-group">
-                <label class="group-label">CHEAT CODES</label>
-                <input type="text" id="cheat-code" placeholder="ENTER GG/PAR CODE" class="text-input">
-                <button class="control-btn" id="btn-apply-cheat" style="margin-top: 5px;">APPLY CHEAT</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- UI Overlay Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const romSelect = document.getElementById('rom-select');
-            const dropZone = document.getElementById('file-drop-zone');
-            const settingsToggle = document.getElementById('settings-toggle');
-            const sidebarClose = document.getElementById('sidebar-close');
-            const sidebar = document.getElementById('sidebar');
-
-            // Toggle Settings Sidebar
-            settingsToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('open');
-            });
-
-            sidebarClose.addEventListener('click', () => {
-                sidebar.classList.remove('open');
-            });
-
-            // Local File Picking
-            romSelect.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    bootLocalRom(e.target.files[0]);
-                }
-            });
-
-            // Drag & Drop
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.style.borderColor = '#00a8e1';
-            });
-
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.style.borderColor = '#1a242f';
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (e.dataTransfer.files.length > 0) {
-                    bootLocalRom(e.dataTransfer.files[0]);
-                }
-            });
-
-            function bootLocalRom(file) {
-                const ext = file.name.split('.').pop().toLowerCase();
-                let consoleType = 'NES';
-                if (ext === 'sfc' || ext === 'smc' || ext === 'fig') {
-                    consoleType = 'SNES';
-                } else if (ext === 'bin' || ext === 'md' || ext === 'gen') {
-                    consoleType = 'SEGA';
-                }
-
-                const objectUrl = URL.createObjectURL(file);
-                const gameConfig = {
-                    console: consoleType,
-                    path: objectUrl,
-                    filename: file.name,
-                    title: file.name.replace(/\.[^/.]+$/, "")
-                };
-
-                if (typeof window.loadROM === 'function') {
-                    window.loadROM(gameConfig);
-                } else {
-                    console.error("[Retro Console] loadROM function not loaded yet!");
-                }
-            }
-
-            // Bind Video Aspect Settings
-            const videoAspect = document.getElementById('video-aspect');
-            videoAspect.addEventListener('change', (e) => {
-                const canvas = document.getElementById('canvas');
-                if (!canvas) return;
-                if (e.target.value === 'stretch') {
-                    canvas.style.aspectRatio = 'auto';
-                } else if (e.target.value === '4-3') {
-                    canvas.style.aspectRatio = '4/3';
-                } else if (e.target.value === '16-9') {
-                    canvas.style.aspectRatio = '16/9';
-                }
-            });
-
-            // Bind Video Filtering Settings
-            const videoFilter = document.getElementById('video-filter');
-            videoFilter.addEventListener('change', (e) => {
-                const canvas = document.getElementById('canvas');
-                if (!canvas) return;
-                if (e.target.value === 'nearest') {
-                    canvas.style.imageRendering = 'pixelated';
-                } else {
-                    canvas.style.imageRendering = 'auto';
-                }
-            });
-        });
-    </script>
 </body>
 </html>
