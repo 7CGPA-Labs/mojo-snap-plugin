@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
 
@@ -36,7 +36,7 @@ jobs:
         run: dotnet build media-plugin/plugin.csproj -c Release -o dist/media-plugin
 
       - name: Upload Plugin Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: media-plugin-dll
           path: dist/media-plugin/RetroConsolePlugin.dll
