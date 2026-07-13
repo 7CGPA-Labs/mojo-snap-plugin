@@ -55,8 +55,8 @@ The compiled DLL assembly will output to `dist/media-plugin/`. Copy `RetroConsol
 ## 🎮 Supported Systems & Cores
 
 - **NES**: fceumm (`.nes`)
-- **SNES**: snes9x2010 (`.sfc`, `.smc`, `.fig`)
-- **Sega Genesis / Master System / Game Gear**: genesis_plus_gx (`.md`, `.sms`, `.gg`, `.bin`, `.gen`)
+- **SNES**: snes9x2010 (`.sfc`, `.smc`)
+- **Sega Genesis / Master System / Game Gear**: genesis_plus_gx (`.md`, `.sms`, `.gg`, `.bin`)
 - **Game Boy / Game Boy Color**: gambatte (`.gb`, `.gbc`)
 - **Game Boy Advance**: mgba (`.gba`)
 

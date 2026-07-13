@@ -24,7 +24,7 @@
                 <div class="drop-title">DRAG & DROP ROM FILE</div>
                 <div class="drop-sub">Supports NES, SNES, SEGA, GB, GBC, and GBA formats</div>
                 <div style="margin: 15px 0; color: #555; font-size: 10px;">- OR -</div>
-                <input type="file" id="rom-select" style="display:none;" accept=".nes,.sfc,.smc,.bin,.md,.gen,.sms,.gg,.gb,.gbc,.gba">
+                <input type="file" id="rom-select" style="display:none;" accept=".nes,.sfc,.smc,.bin,.md,.sms,.gg,.gb,.gbc,.gba">
                 <label for="rom-select" class="btn-select">[SELECT ROM]</label>
             </div>
         </div>
@@ -149,9 +149,9 @@
             function bootLocalRom(file) {
                 const ext = file.name.split('.').pop().toLowerCase();
                 let consoleType = 'NES';
-                if (ext === 'sfc' || ext === 'smc' || ext === 'fig') {
+                if (ext === 'sfc' || ext === 'smc') {
                     consoleType = 'SNES';
-                } else if (ext === 'bin' || ext === 'md' || ext === 'gen' || ext === 'sms' || ext === 'gg') {
+                } else if (ext === 'bin' || ext === 'md' || ext === 'sms' || ext === 'gg') {
                     consoleType = 'SEGA';
                 } else if (ext === 'gb') {
                     consoleType = 'GB';
