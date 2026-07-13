@@ -16,7 +16,8 @@ webos-retro-console/
 ├── build_plugin.ps1       <-- Compiles Emby/Jellyfin C# plugin assembly
 ├── shared/                <-- Common client gaming engine & WASM cores
 │   ├── cores/             <-- WASM retro cores (fceumm, snes9x2010, genesis_plus_gx, gambatte, mgba)
-│   └── assets/            <-- Shared styling and input mappings
+│   ├── gameplay.js        <-- Core emulator logic wrapper
+│   └── logo96.png         <-- Master icon/logo asset
 │
 ├── extension/             <-- Browser Extension (Manifest V3)
 │   ├── manifest.json
@@ -29,7 +30,7 @@ webos-retro-console/
 │   └── Web/
 │       └── play.html      <-- Client player view displaying only WebGL canvas
 │
-└── docs/
+└── docs/                  <-- Contains only index.html (Self-contained Landing Page)
 ```
 
 ---

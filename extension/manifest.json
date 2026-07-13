@@ -8,7 +8,11 @@
     "storage"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": "shared/logo96.png"
+  },
+  "icons": {
+    "96": "shared/logo96.png"
   },
   "web_accessible_resources": [
     {
