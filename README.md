@@ -69,6 +69,9 @@ The compiled DLL assembly will output to `dist/media-plugin/`. Copy `RetroConsol
 ### 1. Network Service Discovery - mDNS
 Connecting players via Virtual Gamepad Controller Android/iOS application (only for Emby/Jellyfin plugin C# backend).
 
-### 2. Emulation Additions
+### 2. Settings & Configurations
+- Video/Audio settings and Core/Game specific settings implementation.
+
+### 3. Emulation Additions
 - Addition of `dosbox_pure` from nightly build.
 
