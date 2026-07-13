@@ -71,6 +71,7 @@ Connecting players via Virtual Gamepad Controller Android/iOS application (only 
 
 ### 2. Settings & Configurations
 - Video/Audio settings and Core/Game specific settings implementation.
+- Save/Load states, Controller Mapping, Cheats option, Volume, Mute/Unmute button, Play/Pause button, and Context Menu (similar to EmulatorJS, leveraging HTML5 Media controls for implementation).
 
 ### 3. Emulation Additions
 - Addition of `dosbox_pure` from nightly build.
