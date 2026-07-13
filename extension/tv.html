@@ -22,9 +22,9 @@
             <div id="file-drop-zone">
                 <div class="glow-icon">💿</div>
                 <div class="drop-title">DRAG & DROP ROM FILE</div>
-                <div class="drop-sub">Supports NES, SNES, and SEGA formats</div>
+                <div class="drop-sub">Supports NES, SNES, SEGA, GB, GBC, and GBA formats</div>
                 <div style="margin: 15px 0; color: #555; font-size: 10px;">- OR -</div>
-                <input type="file" id="rom-select" style="display:none;" accept=".nes,.sfc,.smc,.bin,.md,.gen">
+                <input type="file" id="rom-select" style="display:none;" accept=".nes,.sfc,.smc,.bin,.md,.gen,.sms,.gg,.gb,.gbc,.gba">
                 <label for="rom-select" class="btn-select">[SELECT ROM]</label>
             </div>
         </div>
@@ -151,8 +151,14 @@
                 let consoleType = 'NES';
                 if (ext === 'sfc' || ext === 'smc' || ext === 'fig') {
                     consoleType = 'SNES';
-                } else if (ext === 'bin' || ext === 'md' || ext === 'gen') {
+                } else if (ext === 'bin' || ext === 'md' || ext === 'gen' || ext === 'sms' || ext === 'gg') {
                     consoleType = 'SEGA';
+                } else if (ext === 'gb') {
+                    consoleType = 'GB';
+                } else if (ext === 'gbc') {
+                    consoleType = 'GBC';
+                } else if (ext === 'gba') {
+                    consoleType = 'GBA';
                 }
 
                 const objectUrl = URL.createObjectURL(file);

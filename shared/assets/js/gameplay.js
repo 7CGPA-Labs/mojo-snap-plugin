@@ -653,7 +653,10 @@ async function loadROM(game) {
         const coreMap = {
             'NES': 'fceumm',
             'SNES': 'snes9x2010',
-            'SEGA': 'picodrive'
+            'SEGA': 'genesis_plus_gx',
+            'GB': 'gambatte',
+            'GBC': 'gambatte',
+            'GBA': 'mgba'
         };
         const core = coreMap[game.console.toUpperCase()] || 'fceumm';
         window.currentCore = core;
@@ -683,7 +686,7 @@ async function loadROM(game) {
         }
 
         // Step 4: Load Core Script (with cache-busting query parameter)
-        const coreScriptUrl = `/cores/${core}_libretro.js?cb=${Date.now()}`;
+        const coreScriptUrl = `shared/cores/${core}_libretro.js?cb=${Date.now()}`;
         const scriptModule = await import(coreScriptUrl);
         const factory = scriptModule.default;
 

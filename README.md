@@ -15,7 +15,7 @@ webos-retro-console/
 ├── build_extension.ps1    <-- Packages browser WebExtension
 ├── build_plugin.ps1       <-- Compiles Emby/Jellyfin C# plugin assembly
 ├── shared/                <-- Common client gaming engine & WASM cores
-│   ├── cores/             <-- WASM retro cores (fceumm, snes9x, picodrive)
+│   ├── cores/             <-- WASM retro cores (fceumm, snes9x2010, genesis_plus_gx, gambatte, mgba)
 │   └── assets/            <-- Shared styling and input mappings
 │
 ├── extension/             <-- Browser Extension (Manifest V3)
@@ -52,13 +52,18 @@ The compiled DLL assembly will output to `dist/media-plugin/`. Copy `RetroConsol
 
 ---
 
+## 🎮 Supported Systems & Cores
+
+- **NES**: fceumm (`.nes`)
+- **SNES**: snes9x2010 (`.sfc`, `.smc`, `.fig`)
+- **Sega Genesis / Master System / Game Gear**: genesis_plus_gx (`.md`, `.sms`, `.gg`, `.bin`, `.gen`)
+- **Game Boy / Game Boy Color**: gambatte (`.gb`, `.gbc`)
+- **Game Boy Advance**: mgba (`.gba`)
+
+---
+
 ## Future Development
 
 ### 1. Network Service Discovery - mDNS
 Connecting players via Virtual Gamepad Controller Android/iOS application (only for Emby/Jellyfin plugin C# backend).
-
-### 2. Adding few more cores
-a. Replace `picodrive` with `genesis_plus_gx`, restricting only for `.md`, `.sms`, `.gg`.
-
-b. Add few more cores such as `gambette`, `mgba`, and `dosbox_pure` (games till 1994 will be supported).
 
