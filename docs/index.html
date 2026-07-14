@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Console Platform - Serverless Emulation</title>
+    <title>Mojo Snap Console - Jellyfin Retro Emulation Plugin</title>
     <!-- Google Fonts for Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -194,8 +194,10 @@
 
         .setup-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: 1fr;
             gap: 40px;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .setup-col h3 {
@@ -249,19 +251,19 @@
     <div class="container">
         <!-- Header -->
         <header>
-            <div class="logo">🕹️ RETRO CONSOLE</div>
+            <div class="logo">🕹️ MOJO SNAP CONSOLE</div>
         </header>
 
         <!-- Hero Section -->
         <section class="hero">
-            <h1>Retro Console Platform</h1>
-            <p class="subtitle">Play local retro classics anywhere. Completely serverless.</p>
+            <h1>Mojo Snap Console</h1>
+            <p class="subtitle">Retro game emulation for Jellyfin media servers.</p>
             <p class="description">
-                A high-performance emulation platform running vanilla RetroArch WebAssembly cores directly in your browser. Restructured as a monorepo to power cross-browser extensions and media server plugins from a single client codebase.
+                A high-performance Jellyfin plugin running vanilla RetroArch WebAssembly cores directly in your browser. Browse your ROM library, select a game, and play instantly — with full gamepad support, save state syncing, and zero configuration overhead.
             </p>
             <div class="cta-buttons">
-                <a href="https://github.com/7CGPA-Labs/universal-retro-console/archive/refs/heads/main.zip" class="btn btn-primary">Download Extension</a>
-                <a href="https://github.com/7CGPA-Labs/universal-retro-console/archive/refs/heads/main.zip" class="btn btn-secondary">Get Media Plugin</a>
+                <a href="https://github.com/7CGPA-Labs/mojo_snap_plugin/releases" class="btn btn-primary">Download Plugin</a>
+                <a href="https://github.com/7CGPA-Labs/mojo_snap_plugin" class="btn btn-secondary">View Source</a>
             </div>
         </section>
 
@@ -280,14 +282,14 @@
                     <p>Auto-detects USB and Bluetooth controllers via the standard W3C Gamepad API.</p>
                 </div>
                 <div class="card">
-                    <div class="card-icon">📁</div>
-                    <h3>Zero Server Overhead</h3>
-                    <p>Load ROM files locally from your system; no game files are hosted or bundled in the package.</p>
+                    <div class="card-icon">💾</div>
+                    <h3>Server-Synced Saves</h3>
+                    <p>Save states are stored on your Jellyfin server, keeping your progress portable across all your devices.</p>
                 </div>
                 <div class="card">
                     <div class="card-icon">⚙️</div>
-                    <h3>RetroArch Controls</h3>
-                    <p>Remap gamepad buttons, load cheats, and manage save states locally in browser IndexedDB storage.</p>
+                    <h3>EmulatorJS-Style Controls</h3>
+                    <p>Remap gamepad buttons, load cheats, adjust video/audio settings, and manage save states from an overlay toolbar.</p>
                 </div>
             </div>
         </section>
@@ -297,20 +299,12 @@
             <h2>Quick Installation</h2>
             <div class="setup-grid">
                 <div class="setup-col">
-                    <h3>Chrome/Edge Extension</h3>
+                    <h3>Jellyfin Plugin</h3>
                     <ol>
-                        <li>Download the repository and run <code>build_extension.ps1</code>.</li>
-                        <li>Open <code>chrome://extensions</code>.</li>
-                        <li>Enable <strong>Developer Mode</strong>.</li>
-                        <li>Click <strong>Load unpacked</strong> and select the extension build.</li>
-                    </ol>
-                </div>
-                <div class="setup-col">
-                    <h3>Emby/Jellyfin Plugin</h3>
-                    <ol>
-                        <li>Compile the plugin project using <code>build_plugin.ps1</code>.</li>
-                        <li>Copy the compiled DLL into your server's <code>plugins/</code> folder.</li>
-                        <li>Restart your media server and view games natively in your library.</li>
+                        <li>Download the latest <code>MojoSnapPlugin.dll</code> from the <a href="https://github.com/7CGPA-Labs/mojo_snap_plugin/releases" style="color: var(--primary-color);">Releases</a> page.</li>
+                        <li>Copy the DLL into your Jellyfin server's <code>plugins/</code> folder.</li>
+                        <li>Restart your Jellyfin server.</li>
+                        <li>Add your ROM folder as a library and play games natively from the web UI.</li>
                     </ol>
                 </div>
             </div>
@@ -318,7 +312,7 @@
 
         <!-- Footer -->
         <footer>
-            <p>&copy; 2026 Retro Console Project. Distributed under the MIT License.</p>
+            <p>&copy; 2026 Mojo Snap Console. Distributed under the MIT License.</p>
         </footer>
     </div>
 

@@ -140,13 +140,13 @@ function initBrowserFS() {
             afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
                 new BrowserFS.FileSystem.IndexedDB((err, fs) => {
                     if (err) {
-                        console.error("[RetroArch] IndexedDB failure, falling back to InMemory:", err);
+                        console.error("[MojoSnap] IndexedDB failure, falling back to InMemory:", err);
                         afs = new BrowserFS.FileSystem.InMemory();
                         completeFSInitialization(afs).then(resolve);
                     } else {
                         afs.initialize((initErr) => {
                             if (initErr) {
-                                console.error("[RetroArch] Mirror init failed, fallback to InMemory:", initErr);
+                                console.error("[MojoSnap] Mirror init failed, fallback to InMemory:", initErr);
                                 afs = new BrowserFS.FileSystem.InMemory();
                                 completeFSInitialization(afs).then(resolve);
                             } else {
@@ -341,14 +341,14 @@ async function loadROM(game) {
                 mod.callMain(mod.arguments);
                 canvas.focus();
             } catch (e) {
-                console.error("[RetroArch] Boot error:", e);
+                console.error("[MojoSnap] Boot error:", e);
                 alert("Failed to boot core: " + e.message);
                 exitGameplay();
             }
         }, 50);
 
     } catch (err) {
-        console.error("[RetroArch] System failure:", err);
+        console.error("[MojoSnap] System failure:", err);
         alert("Boot Failure: " + err.message);
         exitGameplay();
     }

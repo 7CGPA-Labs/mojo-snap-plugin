@@ -4,13 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const consoleType = urlParams.get('console') || 'NES';
 
     if (!romId) {
-        console.error("[Retro Console] Missing ROM ID in query parameters!");
+        console.error("[MojoSnap] Missing ROM ID in query parameters!");
         return;
     }
 
     const gameConfig = {
         console: consoleType,
-        path: `/RetroConsole/Rom/${romId}`,
+        path: `/MojoSnap/Rom/${romId}`,
         filename: `${romId}`,
         title: 'media-game'
     };
@@ -19,6 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window.loadROM === 'function') {
         window.loadROM(gameConfig);
     } else {
-        console.error("[Retro Console] loadROM function not loaded yet!");
+        console.error("[MojoSnap] loadROM function not loaded yet!");
     }
 });

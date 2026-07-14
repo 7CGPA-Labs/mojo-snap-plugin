@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>RetroConsolePlugin</AssemblyName>
-    <RootNamespace>RetroConsolePlugin</RootNamespace>
+    <AssemblyName>MojoSnapPlugin</AssemblyName>
+    <RootNamespace>MojoSnapPlugin</RootNamespace>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Authors>7CGPA-Labs</Authors>
     <Company>7CGPA-Labs</Company>

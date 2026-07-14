@@ -5,7 +5,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
-namespace RetroConsolePlugin
+namespace MojoSnapPlugin
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
@@ -15,7 +15,7 @@ namespace RetroConsolePlugin
             Instance = this;
         }
 
-        public override string Name => "Retro Console";
+        public override string Name => "Mojo Snap Console";
         public override Guid Id => Guid.Parse("f6e520d2-9706-44e9-acb5-5fb82bf9c37c");
 
         public static Plugin Instance { get; private set; }
@@ -26,7 +26,7 @@ namespace RetroConsolePlugin
             {
                 new PluginPageInfo
                 {
-                    Name = "retroconsoleplay",
+                    Name = "mojosnapplay",
                     EmbeddedResourcePath = GetType().Namespace + ".Web.play.html",
                     EnableInMainMenu = false
                 }

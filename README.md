@@ -1,78 +1,80 @@
-# 🕹️ Retro Console Platform
+# 🕹️ Mojo Snap Console
 
-A high-performance, serverless, and cross-platform retro game emulation platform. The system runs standard RetroArch WebAssembly cores rendering directly onto a WebGL canvas with support for local USB/Bluetooth gamepads.
+![Build](https://github.com/7CGPA-Labs/mojo_snap_plugin/actions/workflows/build.yml/badge.svg)
+![Version](https://img.shields.io/badge/version-v0.1.0--beta-blue)
 
-This project is organized as a **monorepo** supporting two distribution targets from a single client codebase:
-1. **Cross-Browser WebExtension** (Chrome, Edge, Firefox using Manifest V3).
-2. **Media Server Plugin** (Emby and Jellyfin C# .NET plugins).
+A high-performance Jellyfin plugin for retro game emulation. Runs standard RetroArch WebAssembly cores rendering directly onto a WebGL canvas with full USB/Bluetooth gamepad support.
 
 ---
 
-## 📂 Project Architecture
+## 📂 Project Structure
 
 ```text
-webos-retro-console/
-├── build_extension.ps1    <-- Packages browser WebExtension
-├── build_plugin.ps1       <-- Compiles Emby/Jellyfin C# plugin assembly
+mojo_snap_plugin/
+├── build.ps1              <-- Compiles Jellyfin C# plugin assembly
+├── src/                   <-- Jellyfin .NET Plugin
+│   ├── Api/
+│   │   └── GameApiController.cs
+│   ├── Web/
+│   │   ├── play.html      <-- Client player view (WebGL canvas)
+│   │   └── play.js        <-- ROM loader bootstrapper
+│   ├── Plugin.cs
+│   └── MojoSnapPlugin.csproj
+│
 ├── shared/                <-- Common client gaming engine & WASM cores
 │   ├── cores/             <-- WASM retro cores (fceumm, snes9x2010, genesis_plus_gx, gambatte, mgba, ecwolf)
+│   ├── games/             <-- Demo shareware ROMs
 │   ├── gameplay.js        <-- Core emulator logic wrapper
 │   └── logo96.png         <-- Master icon/logo asset
 │
-├── extension/             <-- Browser Extension (Manifest V3)
-│   ├── manifest.json
-│   ├── popup.html         <-- Toolbar popup
-│   └── tv.html            <-- Viewport with local file loader & options sidebar
-│
-├── media-plugin/          <-- Emby/Jellyfin .NET Plugin
-│   ├── plugin.csproj
-│   ├── Plugin.cs
-│   └── Web/
-│       └── play.html      <-- Client player view displaying only WebGL canvas
-│
-└── docs/                  <-- Contains only index.html (Self-contained Landing Page)
+└── docs/                  <-- GitHub Pages landing page
+    └── index.html
 ```
 
 ---
 
-## 🛠️ Build & Package Instructions
+## 🛠️ Build & Install
 
-### 1. WebExtension Package
-Open PowerShell at the root and run:
-```powershell
-powershell -ExecutionPolicy Bypass -File build_extension.ps1
-```
-The packaged archive will output to `dist/extension.zip`. Unzip it and load it in Chrome (`chrome://extensions/` -> Enable Developer Mode -> "Load unpacked").
-
-### 2. Emby/Jellyfin Media Server Plugin
 Ensure you have .NET Core SDK 6.0+ installed, then open PowerShell and run:
+
 ```powershell
-powershell -ExecutionPolicy Bypass -File build_plugin.ps1
+powershell -ExecutionPolicy Bypass -File build.ps1
 ```
-The compiled DLL assembly will output to `dist/media-plugin/`. Copy `RetroConsolePlugin.dll` to your server's `plugins/` folder and restart the server.
+
+The compiled DLL assembly will output to `dist/`. Copy `MojoSnapPlugin.dll` to your Jellyfin server's `plugins/` folder and restart the server.
 
 ---
 
 ## 🎮 Supported Systems & Cores
 
-- **NES**: fceumm (`.nes`)
-- **SNES**: snes9x2010 (`.sfc`, `.smc`)
-- **Sega Genesis / Master System / Game Gear**: genesis_plus_gx (`.md`, `.sms`, `.gg`, `.bin`)
-- **Game Boy / Game Boy Color**: gambatte (`.gb`, `.gbc`)
-- **Game Boy Advance**: mgba (`.gba`)
-- **Wolfenstein 3D**: ecwolf (`.pk3`, `.zip`)
+| System | Core | File Extensions |
+|--------|------|-----------------|
+| NES | fceumm | `.nes` |
+| SNES | snes9x2010 | `.sfc`, `.smc` |
+| Sega Genesis / Master System / Game Gear | genesis_plus_gx | `.md`, `.sms`, `.gg`, `.bin` |
+| Game Boy / Game Boy Color | gambatte | `.gb`, `.gbc` |
+| Game Boy Advance | mgba | `.gba` |
+| Wolfenstein 3D | ecwolf | `.pk3`, `.zip` |
 
 ---
 
 ## Future Development
 
-### 1. Network Service Discovery - mDNS
-Connecting players via Virtual Gamepad Controller Android/iOS application (only for Emby/Jellyfin plugin C# backend).
+### 1. Network Service Discovery — mDNS
+Connecting players via Virtual Gamepad Controller Android/iOS application using mDNS service broadcasting and low-latency binary WebSocket protocol.
 
 ### 2. Settings & Configurations
-- Video/Audio settings and Core/Game specific settings implementation.
-- Save/Load states, Controller Mapping, Cheats option, Volume, Mute/Unmute button, Play/Pause button, and Context Menu (similar to EmulatorJS, leveraging HTML5 Media controls for implementation).
+- Video/Audio/Hardware settings with core/game specific overrides.
+- Save/Load states synced to the Jellyfin server, Controller Mapping, Cheats, Volume, Play/Pause, and Context Menu (EmulatorJS-style overlay with HTML5 media controls).
+- Graphics options: Aspect ratio, bilinear filtering, VSync, integer scaling, screen rotation, shader effects.
+- Sound mixer options: Audio latency, resampler quality, rate control.
+- Hardware options: Threaded video, run-ahead, rewind buffer, fast forward, core overclocking.
 
 ### 3. Emulation Additions
-- Addition of `dosbox_pure` from nightly build.
+- Addition of `dosbox_pure` from nightly build for DOS game support.
 
+---
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.

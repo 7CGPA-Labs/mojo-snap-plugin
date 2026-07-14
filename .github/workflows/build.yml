@@ -1,24 +1,24 @@
-name: Compile Media Server Plugin
+name: Build Mojo Snap Plugin
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - "media-plugin/**"
+      - "src/**"
       - "shared/**"
-      - "build_plugin.ps1"
-      - ".github/workflows/build-plugin.yml"
+      - "build.ps1"
+      - ".github/workflows/build.yml"
   pull_request:
     branches: [ "main" ]
     paths:
-      - "media-plugin/**"
+      - "src/**"
       - "shared/**"
-      - "build_plugin.ps1"
-      - ".github/workflows/build-plugin.yml"
+      - "build.ps1"
+      - ".github/workflows/build.yml"
 
 jobs:
   build:
-    name: Compile Media Server Plugin
+    name: Build Mojo Snap Plugin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,13 +30,13 @@ jobs:
           dotnet-version: '6.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore media-plugin/plugin.csproj
+        run: dotnet restore src/MojoSnapPlugin.csproj
 
       - name: Build plugin assembly
-        run: dotnet build media-plugin/plugin.csproj -c Release -o dist/media-plugin
+        run: dotnet build src/MojoSnapPlugin.csproj -c Release -o dist/
 
       - name: Upload Plugin Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: media-plugin-dll
-          path: dist/media-plugin/RetroConsolePlugin.dll
+          name: mojo-snap-plugin
+          path: dist/MojoSnapPlugin.dll

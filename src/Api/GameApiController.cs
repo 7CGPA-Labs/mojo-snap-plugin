@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MediaBrowser.Controller.Library;
 
-namespace RetroConsolePlugin.Api
+namespace MojoSnapPlugin.Api
 {
     [ApiController]
-    [Route("RetroConsole")]
+    [Route("MojoSnap")]
     public class GameApiController : ControllerBase
     {
         private readonly ILibraryManager _libraryManager;
