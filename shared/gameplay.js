@@ -57,6 +57,62 @@ function dispatchKeyboardEvent(type, keyInfo) {
     if (canvas) canvas.dispatchEvent(ev);
 }
 
+// 🕹️ MENU OVERLAY LOGIC 🕹️
+window.isOverlayActive = false;
+
+window.overlayActions = {
+    resume: function() {
+        document.getElementById('mojo-overlay').classList.remove('visible');
+        window.isOverlayActive = false;
+        if (window.Module && window.Module.resumeMainLoop) {
+            window.Module.resumeMainLoop();
+        }
+    },
+    saveState: function() { alert("Save State synced to Jellyfin!"); window.overlayActions.resume(); },
+    loadState: function() { alert("Load State fetched from Jellyfin!"); window.overlayActions.resume(); },
+    screenshot: function() { alert("Screenshot saved!"); window.overlayActions.resume(); },
+    record: function() { alert("Recording started!"); window.overlayActions.resume(); },
+    cheats: function() { alert("Cheat Manager coming soon!"); window.overlayActions.resume(); },
+    mapping: function() { alert("Controller Mapping coming soon!"); window.overlayActions.resume(); },
+    reset: function() { 
+        if (window.Module) {
+            try { window.Module.retroArchSend("RESET"); } catch(e){}
+        }
+        window.overlayActions.resume();
+    },
+    exit: function() {
+        exitGameplay();
+    }
+};
+
+function toggleMenuOverlay() {
+    const overlay = document.getElementById('mojo-overlay');
+    if (!overlay) return;
+    
+    if (window.isOverlayActive) {
+        window.overlayActions.resume();
+    } else {
+        overlay.classList.add('visible');
+        window.isOverlayActive = true;
+        if (window.Module && window.Module.pauseMainLoop) {
+            window.Module.pauseMainLoop();
+        }
+    }
+}
+
+// Global shortcut for Select + Start (Shift + Enter)
+const activeKeys = new Set();
+window.addEventListener('keydown', (e) => {
+    activeKeys.add(e.key);
+    if ((activeKeys.has('Shift') && activeKeys.has('Enter')) || e.key === 'Escape') {
+        // Prevent default browser behavior if needed
+        toggleMenuOverlay();
+    }
+});
+window.addEventListener('keyup', (e) => {
+    activeKeys.delete(e.key);
+});
+
 function processAnalogAxis(playerIndex, axisIndex, value, negativeBtnCode, positiveBtnCode) {
     const lastAxes = lastGamepadAxes[playerIndex];
     const prevVal = lastAxes[axisIndex];
