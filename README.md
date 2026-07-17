@@ -68,39 +68,67 @@ Because of Jellyfin 10.9+ security architecture, this C# plugin cannot automatic
 4. Paste the following snippet into the script configuration to add a "Play" button to any game item:
 
 ```javascript
-document.addEventListener('viewshow', function (e) {
-    var view = e.detail.view;
-    var item = e.detail.item;
+let injectedForId = null;
+
+const observer = new MutationObserver(() => {
+    const hash = window.location.hash;
+    if (!hash.includes('details')) {
+        injectedForId = null; // Reset when leaving the details page
+        return;
+    }
     
-    // Only proceed on the item details page and if it's a Game/ROM
-    if (e.detail.type !== 'item' || !item || !item.Id) return;
+    const urlParams = new URLSearchParams(hash.substring(hash.indexOf('?')));
+    const id = urlParams.get('id');
+    if (!id || injectedForId === id) return;
 
-    if (item.Type === 'Game' || (item.Path && item.Path.match(/\.(nes|sfc|smc|md|gba|gb|gbc)$/i))) {
+    // Find the standard Play button (handles both old and React UI)
+    const playBtn = document.querySelector('button[title="Play"], button[aria-label="Play"], button[data-action="resume"], .btnPlay');
+    
+    if (playBtn) {
+        const buttonsContainer = playBtn.parentElement;
         
-        var buttonsContainer = view.querySelector('.mainSection .detailButtons');
-        if (!buttonsContainer) return;
-
-        // Ensure we don't add duplicate buttons if we navigate back and forth
-        if (buttonsContainer.querySelector('.btnMojoPlay')) return;
-
-        var playButton = document.createElement('button');
-        playButton.className = 'button-flat btnMojoPlay detailButton';
-        playButton.style.backgroundColor = '#52B54B';
-        playButton.style.color = '#fff';
-        playButton.style.marginRight = '1em';
-        
-        // Use standard Jellyfin material icons
-        playButton.innerHTML = '<span class="material-icons detailButton-icon" style="vertical-align: middle;">play_arrow</span><span class="detailButton-text" style="vertical-align: middle; margin-left: 5px;">Play Retro Game</span>';
-
-        playButton.addEventListener('click', function() {
-            var url = '/web/index.html#!/mojosnapplay.html?id=' + item.Id;
-            window.location.href = url;
-        });
-
-        // Insert as the first button in the row
-        buttonsContainer.insertBefore(playButton, buttonsContainer.firstChild);
+        if (!buttonsContainer.querySelector('.btnMojoPlay')) {
+            injectedForId = id; // Prevent infinite loops
+            
+            // Use Jellyfin's global ApiClient to fetch metadata
+            var apiClient = window.ApiClient; 
+            if(apiClient) {
+                apiClient.getItem(apiClient.getCurrentUserId(), id).then(item => {
+                    // Check if it is a ROM based on the Path or Container extension
+                    if (item && ((item.Path && item.Path.match(/\.(nes|sfc|smc|md|gba|gb|gbc|sms|gg|bin)$/i)) || 
+                                 (item.Container && item.Container.match(/(nes|sfc|smc|md|gba|gb|gbc|sms|gg|bin)/i)))) {
+                        
+                        var mojoBtn = document.createElement('button');
+                        mojoBtn.className = playBtn.className + ' btnMojoPlay';
+                        
+                        // Style it to stand out!
+                        mojoBtn.style.backgroundColor = '#52B54B';
+                        mojoBtn.style.color = '#fff';
+                        mojoBtn.style.marginLeft = '10px';
+                        mojoBtn.style.border = 'none';
+                        mojoBtn.style.borderRadius = '5px';
+                        mojoBtn.style.padding = '8px 16px';
+                        mojoBtn.style.cursor = 'pointer';
+                        mojoBtn.style.fontWeight = 'bold';
+                        mojoBtn.innerHTML = '🎮 Play Retro Game';
+                        
+                        mojoBtn.onclick = function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.location.href = '/web/index.html#!/mojosnapplay.html?id=' + id;
+                        };
+                        
+                        // Add it right next to the standard Play button
+                        buttonsContainer.appendChild(mojoBtn);
+                    }
+                }).catch(err => console.log("[MojoSnap] Error fetching item:", err));
+            }
+        }
     }
 });
+
+// Observe the entire body for DOM changes, which is required for React SPAs
+observer.observe(document.body, { childList: true, subtree: true });
 ```
 
 5. Hard-refresh your browser (`Ctrl+F5`). When you click on a ROM in your library, a green Play button will now appear to launch the Mojo Snap emulator directly!
