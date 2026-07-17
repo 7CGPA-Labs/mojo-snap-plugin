@@ -325,7 +325,7 @@ async function loadROM(game) {
             }],
             locateFile: function(path, prefix) {
                 if (path.endsWith(".wasm")) {
-                    return `./cores/${path}?cb=${Date.now()}`;
+                    return prefix + path + `?cb=${Date.now()}`;
                 }
                 return prefix + path;
             }
