@@ -31,7 +31,7 @@ namespace MojoSnapPlugin
                 extension == ".gbc" || 
                 extension == ".gba")
             {
-                return new Game
+                return new Video
                 {
                     Path = args.Path,
                     Name = Path.GetFileNameWithoutExtension(args.Path)
