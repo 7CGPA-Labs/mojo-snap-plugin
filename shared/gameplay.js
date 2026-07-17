@@ -293,7 +293,7 @@ async function loadROM(game) {
             fs.writeFileSync(`/home/web_user/retroarch/cores/${core}_libretro.core`, BufferClass(new Uint8Array(0)));
         } catch (e) {}
 
-        const coreScriptUrl = `./shared/cores/${core}_libretro.js?cb=${Date.now()}`;
+        const coreScriptUrl = `./cores/${core}_libretro.js?cb=${Date.now()}`;
         const scriptModule = await import(coreScriptUrl);
         const factory = scriptModule.default;
 
@@ -325,7 +325,7 @@ async function loadROM(game) {
             }],
             locateFile: function(path, prefix) {
                 if (path.endsWith(".wasm")) {
-                    return `./shared/cores/${path}?cb=${Date.now()}`;
+                    return `./cores/${path}?cb=${Date.now()}`;
                 }
                 return prefix + path;
             }
