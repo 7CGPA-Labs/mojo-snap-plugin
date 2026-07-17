@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mojo Snap Console Configuration</title>
+</head>
+<body>
+    <div data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form class="pluginConfigurationForm">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Mojo Snap Console Settings</h2>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="defaultConsole">Default Console Type</label>
+                        <select is="emby-select" id="defaultConsole" name="defaultConsole" class="emby-select-withcolor emby-select">
+                            <option value="NES">NES</option>
+                            <option value="SNES">SNES</option>
+                            <option value="SEGA">SEGA Genesis</option>
+                            <option value="GB">Gameboy</option>
+                            <option value="GBA">Gameboy Advance</option>
+                        </select>
+                        <div class="fieldDescription">The default console core to use if it cannot be determined automatically.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="enableAutoSave" name="enableAutoSave" />
+                            <span>Enable Auto-Save syncing to Jellyfin</span>
+                        </label>
+                        <div class="fieldDescription">Automatically uploads battery saves (.srm) to the Jellyfin server.</div>
+                    </div>
+
+                    <br/>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            var MojoSnapConfig = {
+                pluginUniqueId: "f6e520d2-9706-44e9-acb5-5fb82bf9c37c"
+            };
+
+            $('.pluginConfigurationPage').on('pageinit', function (event) {
+                var page = this;
+
+                $('.pluginConfigurationForm', page).on('submit', function (e) {
+                    e.preventDefault();
+                    
+                    Dashboard.showLoadingMsg();
+                    
+                    var config = {
+                        DefaultConsole: $('#defaultConsole', page).val(),
+                        EnableAutoSave: $('#enableAutoSave', page).prop('checked')
+                    };
+                    
+                    ApiClient.getPluginConfiguration(MojoSnapConfig.pluginUniqueId).then(function (existingConfig) {
+                        // Merge and save
+                        Object.assign(existingConfig, config);
+                        ApiClient.updatePluginConfiguration(MojoSnapConfig.pluginUniqueId, existingConfig).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                });
+            }).on('pageshow', function (event) {
+                var page = this;
+                
+                Dashboard.showLoadingMsg();
+                
+                ApiClient.getPluginConfiguration(MojoSnapConfig.pluginUniqueId).then(function (config) {
+                    $('#defaultConsole', page).val(config.DefaultConsole || 'NES');
+                    $('#enableAutoSave', page).prop('checked', config.EnableAutoSave || false);
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+        </script>
+    </div>
+</body>
+</html>
