@@ -179,10 +179,12 @@ Connecting players via Virtual Gamepad Controller Android/iOS application using 
 - Addition of `dosbox_pure` from nightly build for DOS game support.
 
 ### 4. Advanced Core Settings (RGUI Menu)
-Every libretro core comes fully equipped with the standard RetroArch RGUI menu (the classic green interface). This menu allows users to tweak deep emulation settings (shaders, scaling, audio latency, core-specific options, and manual state management).
+Every web-compiled libretro core comes fully equipped with the standard RetroArch RGUI menu (the classic green interface). This menu allows users to tweak deep emulation settings (shaders, scaling, audio latency, core-specific options, and manual state management).
 You can access it in two ways:
 - **Keyboard Shortcut**: Press `F1` at any time during gameplay.
 - **Programmatically**: If you want to trigger it from a custom HTML button in the Mojo Snap OS overlay, call `window.Module.retroArchSend("MENU_TOGGLE");` in your JavaScript.
+
+*Note on Architecture: The RGUI menu is actually part of the RetroArch frontend, not the individual emulation cores. On Windows, Linux, and Android, the frontend dynamically loads the cores (e.g., `.dll` or `.so`), which act as pure emulation black boxes with no UI. However, for WebAssembly, the frontend and the core are statically compiled together into a single `.wasm` file, which is why the web cores used in this plugin have the RGUI menu baked directly into them!*
 
 ---
 
