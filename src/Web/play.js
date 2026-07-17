@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const romId = urlParams.get('id');
     const consoleType = urlParams.get('console') || 'NES';
+    const ext = urlParams.get('ext') || 'rom';
 
     if (!romId) {
         console.error("[MojoSnap] Missing ROM ID in query parameters!");
@@ -11,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameConfig = {
         console: consoleType,
         path: `/MojoSnap/Rom/${romId}`,
-        filename: `${romId}`,
+        filename: `${romId}.${ext}`,
         title: 'media-game'
     };
 

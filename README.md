@@ -126,10 +126,18 @@ function checkAndInject() {
                         mojoBtn.style.fontWeight = 'bold';
                         mojoBtn.innerHTML = '🎮 Play Retro Game';
                         
+                        let romExt = 'rom';
+                        if (item.Path) {
+                            let parts = item.Path.split('.');
+                            if (parts.length > 1) romExt = parts.pop().toLowerCase();
+                        } else if (item.Container) {
+                            romExt = item.Container.toLowerCase();
+                        }
+                        
                         mojoBtn.onclick = function(e) {
                             e.preventDefault();
                             e.stopPropagation();
-                            window.location.href = '/web/mojosnap/play.html?id=' + id;
+                            window.location.href = '/web/mojosnap/play.html?id=' + id + '&ext=' + romExt;
                         };
                         
                         buttonsContainer.appendChild(mojoBtn);
