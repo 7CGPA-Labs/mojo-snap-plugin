@@ -12,4 +12,7 @@
     <PackageReference Include="Jellyfin.Controller" Version="10.8.10" PrivateAssets="All" />
     <PackageReference Include="Jellyfin.Model" Version="10.8.10" PrivateAssets="All" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="logo96.png" />
+  </ItemGroup>
 </Project>
