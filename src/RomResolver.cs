@@ -9,7 +9,7 @@ namespace MojoSnapPlugin
     public class RomResolver : IItemResolver
     {
         // High priority so it catches the files before default resolvers ignore them
-        public int Priority => 1;
+        public ResolverPriority Priority => ResolverPriority.First;
 
         public BaseItem ResolvePath(ItemResolveArgs args)
         {
