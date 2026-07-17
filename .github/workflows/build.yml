@@ -19,7 +19,7 @@ on:
 jobs:
   build:
     name: Build Mojo Snap Plugin
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,8 +35,16 @@ jobs:
       - name: Build plugin assembly
         run: dotnet build src/MojoSnapPlugin.csproj -c Release -o dist/
 
-      - name: Upload Plugin Artifact
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build Setup Executable
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
+
+      - name: Upload Releases
         uses: actions/upload-artifact@v4
         with:
-          name: mojo-snap-plugin
-          path: dist/MojoSnapPlugin.dll
+          name: mojo-snap-releases
+          path: |
+            dist/MojoSnapPlugin.dll
+            dist/MojoSnap_Setup.exe
