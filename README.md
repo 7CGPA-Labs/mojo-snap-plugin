@@ -41,7 +41,15 @@ Ensure you have .NET Core SDK 6.0+ installed, then open PowerShell and run:
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-The compiled DLL assembly will output to `dist/`. Copy `MojoSnapPlugin.dll` to your Jellyfin server's `plugins/` folder and restart the server.
+The compiled DLL assembly will output to `dist/`. Copy `MojoSnapPlugin.dll` to your Jellyfin server's `plugins/` folder.
+
+Next, you must copy the frontend player assets so Jellyfin can serve them:
+1. Go to your Jellyfin installation's web folder (usually `C:\Program Files\Jellyfin\Server\jellyfin-web\`).
+2. Create a folder named `mojosnap`.
+3. Copy everything inside this repository's `src/Web/` folder into that new `mojosnap` folder.
+4. Copy the entire `shared/` folder into that `mojosnap` folder.
+
+Restart your Jellyfin server.
 
 ---
 
@@ -121,7 +129,7 @@ function checkAndInject() {
                         mojoBtn.onclick = function(e) {
                             e.preventDefault();
                             e.stopPropagation();
-                            window.location.href = '/web/index.html#!/mojosnapplay.html?id=' + id;
+                            window.location.href = '/web/mojosnap/play.html?id=' + id;
                         };
                         
                         buttonsContainer.appendChild(mojoBtn);
