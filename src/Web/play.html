@@ -29,18 +29,21 @@
         }
         
         /* Overlay Menu Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap');
+        
         #mojo-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             opacity: 0;
             transition: opacity 0.3s ease;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
         #mojo-overlay.visible {
@@ -48,73 +51,148 @@
             opacity: 1;
         }
         
-        .menu-container {
-            background: rgba(20, 20, 30, 0.85);
+        .menu-wrapper {
+            background: rgba(20, 20, 25, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 30px;
-            width: 350px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #fff;
+            border-radius: 20px;
+            width: 500px;
+            max-height: 80vh;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .menu-header {
+            padding: 25px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+        }
+
+        .menu-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 0 15px 0;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .tabs {
+            display: flex;
             gap: 10px;
         }
-        
-        .menu-header {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 20px;
-            color: #00a8ff;
-            text-shadow: 0 0 10px rgba(0, 168, 255, 0.5);
-        }
-        
-        .menu-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 16px;
             border-radius: 8px;
-            color: #fff;
-            padding: 12px 15px;
-            font-size: 16px;
             cursor: pointer;
-            transition: all 0.2s;
-            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: #ccc;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .tab-content {
+            padding: 20px 30px;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-content.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .menu-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 15px;
+            font-weight: 500;
         }
-        
-        .menu-btn:hover {
-            background: rgba(0, 168, 255, 0.2);
-            border-color: rgba(0, 168, 255, 0.5);
+
+        .menu-item:hover, .menu-item:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.1);
             transform: translateX(5px);
-        }
-        
-        .menu-btn.primary {
-            background: rgba(0, 168, 255, 0.2);
-            border-color: #00a8ff;
+            outline: none;
             color: #fff;
-            font-weight: bold;
-            justify-content: center;
-            margin-top: 10px;
         }
         
-        .menu-btn.primary:hover {
-            background: #00a8ff;
-            transform: scale(1.02);
-        }
-        
-        .menu-btn.danger {
-            background: rgba(255, 50, 50, 0.1);
-            border-color: rgba(255, 50, 50, 0.3);
+        .menu-item.danger {
             color: #ff6b6b;
         }
-        
-        .menu-btn.danger:hover {
-            background: rgba(255, 50, 50, 0.3);
-            border-color: #ff6b6b;
+        .menu-item.danger:hover {
+            background: rgba(255, 50, 50, 0.15);
+            border-color: rgba(255, 50, 50, 0.3);
+            color: #ff8787;
+        }
+
+        .value-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .val-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .val-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .val-text {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
         }
     </style>
     <!-- Embed standard libraries from the served plugin paths -->
@@ -129,37 +207,68 @@
     
     <!-- Mojo Snap In-Game Menu Overlay -->
     <div id="mojo-overlay">
-        <div class="menu-container">
-            <div class="menu-header">Mojo Snap OS</div>
+        <div class="menu-wrapper">
+            <div class="menu-header">
+                <h2 class="menu-title">Mojo Snap OS</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="window.switchMenuTab('quick')">Quick Menu</button>
+                    <button class="tab-btn" onclick="window.switchMenuTab('settings')">Settings</button>
+                </div>
+            </div>
             
-            <button class="menu-btn" onclick="window.overlayActions.resume()">
-                <span>▶ Resume Game</span>
-            </button>
-            <button class="menu-btn" onclick="window.overlayActions.saveState()">
-                <span>💾 Save State</span>
-            </button>
-            <button class="menu-btn" onclick="window.overlayActions.loadState()">
-                <span>📂 Load State</span>
-            </button>
-            <button class="menu-btn" onclick="window.overlayActions.screenshot()">
-                <span>📸 Screenshot</span>
-            </button>
-            <button class="menu-btn" onclick="window.overlayActions.record()">
-                <span>🎥 Screen Recording</span>
-            </button>
-            <button class="menu-btn" onclick="window.overlayActions.cheats()">
-                <span>⭐ Cheat Manager</span>
-            </button>
-            <button class="menu-btn" onclick="window.overlayActions.mapping()">
-                <span>🎮 Controller Mapping</span>
-            </button>
-            <button class="menu-btn danger" onclick="window.overlayActions.reset()">
-                <span>🔄 Reset Game</span>
-            </button>
-            
-            <button class="menu-btn primary" onclick="window.overlayActions.exit()">
-                Exit Game
-            </button>
+            <div id="tab-quick" class="tab-content active">
+                <div class="menu-item" onclick="window.overlayActions.resume()">
+                    <span>▶ Resume</span>
+                </div>
+                <div class="menu-item" onclick="window.overlayActions.reset()">
+                    <span>🔄 Restart Game</span>
+                </div>
+                <div class="menu-item danger" onclick="window.overlayActions.exit()">
+                    <span>⏹ Close Content</span>
+                </div>
+                
+                <div class="menu-item" style="cursor: default;" onclick="event.stopPropagation()">
+                    <span>State Slot</span>
+                    <div class="value-control">
+                        <button class="val-btn" onclick="window.overlayActions.decStateSlot(event)">-</button>
+                        <span class="val-text" id="ui-state-slot">0</span>
+                        <button class="val-btn" onclick="window.overlayActions.incStateSlot(event)">+</button>
+                    </div>
+                </div>
+                <div class="menu-item" onclick="window.overlayActions.saveState()">
+                    <span>💾 Save State</span>
+                </div>
+                <div class="menu-item" onclick="window.overlayActions.loadState()">
+                    <span>📂 Load State</span>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="tab-content">
+                <div class="menu-item" style="cursor: default;" onclick="event.stopPropagation()">
+                    <span>Scaling Filter</span>
+                    <div class="value-control">
+                        <button class="val-btn" onclick="window.overlayActions.toggleFilter(event)">◀</button>
+                        <span class="val-text" id="ui-filter">Sharp</span>
+                        <button class="val-btn" onclick="window.overlayActions.toggleFilter(event)">▶</button>
+                    </div>
+                </div>
+                <div class="menu-item" style="cursor: default;" onclick="event.stopPropagation()">
+                    <span>Aspect Ratio</span>
+                    <div class="value-control">
+                        <button class="val-btn" onclick="window.overlayActions.toggleAspect(event)">◀</button>
+                        <span class="val-text" id="ui-aspect">Core</span>
+                        <button class="val-btn" onclick="window.overlayActions.toggleAspect(event)">▶</button>
+                    </div>
+                </div>
+                <div class="menu-item" style="cursor: default;" onclick="event.stopPropagation()">
+                    <span>Audio Mute</span>
+                    <div class="value-control">
+                        <button class="val-btn" onclick="window.overlayActions.toggleMute(event)">◀</button>
+                        <span class="val-text" id="ui-mute">Off</span>
+                        <button class="val-btn" onclick="window.overlayActions.toggleMute(event)">▶</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </body>
