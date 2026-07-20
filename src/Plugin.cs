@@ -12,6 +12,7 @@ namespace MojoSnapPlugin
             : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
+            StartService();
         }
 
         public override string Name => "Mojo Snap Console";
@@ -19,6 +20,14 @@ namespace MojoSnapPlugin
         public override string Description => "A beautiful, WebAssembly-powered Retro Emulation Console for Jellyfin.";
 
         public static Plugin Instance { get; private set; }
+
+        private VirtualControllerService _controllerService;
+
+        public void StartService()
+        {
+            _controllerService = new VirtualControllerService();
+            _controllerService.Start();
+        }
 
         public IEnumerable<PluginPageInfo> GetPages()
         {

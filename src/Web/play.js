@@ -22,4 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error("[MojoSnap] loadROM function not loaded yet!");
     }
+
+    // Connect to backend WebSocket for mDNS controller inputs
+    const wsUrl = `ws://${window.location.hostname}:55443/display`;
+    const ws = new WebSocket(wsUrl);
+    ws.binaryType = "arraybuffer";
+    
+    ws.onmessage = (event) => {
+        if (event.data instanceof ArrayBuffer) {
+            const buffer = new Uint8Array(event.data);
+            if (window.Module && typeof window.Module.retroArchSend === 'function') {
+                window.Module.retroArchSend(buffer);
+            }
+        }
+    };
 });
