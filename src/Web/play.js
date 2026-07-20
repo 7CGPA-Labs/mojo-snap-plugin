@@ -36,4 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+
+    const bootCheck = setInterval(() => {
+        if (window.retroArchRunning) {
+            clearInterval(bootCheck);
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ event: "core_loaded", core: window.currentCore }));
+            }
+        }
+    }, 200);
 });

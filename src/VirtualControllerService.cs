@@ -44,6 +44,17 @@ namespace MojoSnapPlugin
                         }
                     }
                 };
+
+                socket.OnMessage = (message) =>
+                {
+                    if (_displays.Contains(socket))
+                    {
+                        foreach (var controller in _controllers)
+                        {
+                            controller.Send(message);
+                        }
+                    }
+                };
             });
 
             // Start mDNS Responder
