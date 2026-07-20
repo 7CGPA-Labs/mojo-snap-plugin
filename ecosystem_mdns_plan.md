@@ -48,12 +48,12 @@ Sending text-based JSON over WebSockets introduces unnecessary overhead and pars
 *   **Byte 1: Action Phase**
     *   `1` = BUTTON_DOWN
     *   `2` = BUTTON_UP
-    *   `3` = AXIS_MOVE (Analog sticks)
+    *   `3` = PHYSICAL_CONTROLLER_SYNC (Bluetooth/2.4G Controllers)
 *   **Byte 2: Input ID**
     *   For Buttons: `1` to `15` (matching the standardized `RETRO_DEVICE_ID_JOYPAD_*` mapping).
     *   For Axis: `0` (Left X), `1` (Left Y), `2` (Right X), `3` (Right Y)
-*   **Bytes 3-4 (Optional - Only for AXIS_MOVE):**
-    *   16-bit signed integer representing the analog stick value (-32768 to 32767).
+*   **Bytes 3-4 (Optional - Only for PHYSICAL_CONTROLLER_SYNC):**
+    *   16-bit signed integer representing the Bluetooth/2.4G controller axis or trigger values.
 
 ---
 
@@ -79,3 +79,4 @@ To prevent unauthorized users on a public Wi-Fi network from hijacking the TV or
 *   Add a 4-digit PIN challenge in the WebSocket handshake.
 *   The Host displays a 4-digit PIN on the screen.
 *   The Mobile app prompts for the PIN before upgrading to the binary controller protocol.
+
