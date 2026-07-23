@@ -67,3 +67,4 @@ jobs:
           path: |
             dist/MojoSnapPlugin.dll
             dist/MojoSnap_Setup.exe
+# trigger CI
