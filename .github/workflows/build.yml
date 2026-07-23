@@ -51,8 +51,11 @@ jobs:
           npm install
           npm run lint
 
-      - name: Build plugin assembly
-        run: dotnet build src/MojoSnapPlugin.csproj -c Release -o dist/
+      - name: Install 7-Zip
+        run: choco install 7zip -y --no-progress
+
+      - name: Run Build Script (including Core download)
+        run: .\build.ps1
 
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress

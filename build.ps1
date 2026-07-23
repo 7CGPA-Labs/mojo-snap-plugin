@@ -15,11 +15,17 @@ if (Test-Path $DistDir) {
 
 $7zPath = "C:\Program Files\7-Zip\7z.exe"
 if (-not (Test-Path $7zPath)) {
-    Write-Error "7-Zip is required to extract cores. Please install it to C:\Program Files\7-Zip\7z.exe"
-    exit 1
+    $7zCommand = Get-Command 7z.exe -ErrorAction SilentlyContinue
+    if ($7zCommand) {
+        $7zPath = $7zCommand.Source
+    } else {
+        Write-Error "7-Zip is required to extract cores. Please install it."
+        exit 1
+    }
 }
 
 $CoresDir = Join-Path $RootDir "shared\cores"
+if (-not (Test-Path $CoresDir)) { New-Item -ItemType Directory -Path $CoresDir | Out-Null }
 $ArchiveUrl = "https://buildbot.libretro.com/nightly/emscripten/RetroArch.7z"
 $ArchiveTemp = Join-Path $RootDir "RetroArch.7z"
 $ExtractTemp = Join-Path $RootDir "RetroArchTemp"
