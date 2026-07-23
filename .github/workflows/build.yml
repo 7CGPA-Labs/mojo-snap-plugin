@@ -6,14 +6,20 @@ on:
     paths:
       - "src/**"
       - "shared/**"
+      - "tests/**"
       - "build.ps1"
+      - "package.json"
+      - ".eslintrc.json"
       - ".github/workflows/build.yml"
   pull_request:
     branches: [ "main" ]
     paths:
       - "src/**"
       - "shared/**"
+      - "tests/**"
       - "build.ps1"
+      - "package.json"
+      - ".eslintrc.json"
       - ".github/workflows/build.yml"
 
 jobs:
