@@ -138,7 +138,7 @@ function initBrowserFS() {
 
         if (BrowserFS.FileSystem.IndexedDB.isAvailable()) {
             afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
-                new BrowserFS.FileSystem.IndexedDB((err, fs) => {
+                new BrowserFS.FileSystem.IndexedDB((err) => {
                     if (err) {
                         console.error("[MojoSnap] IndexedDB failure, falling back to InMemory:", err);
                         afs = new BrowserFS.FileSystem.InMemory();
@@ -176,13 +176,13 @@ function completeFSInitialization(afsInstance) {
         BrowserFS.initialize(mfs);
 
         const fs = BrowserFS.BFSRequire('fs');
-        try { fs.mkdirSync('/home'); } catch (e) {}
-        try { fs.mkdirSync('/home/web_user'); } catch (e) {}
-        try { fs.mkdirSync('/home/web_user/retroarch'); } catch (e) {}
-        try { fs.mkdirSync('/home/web_user/retroarch/cores'); } catch (e) {}
-        try { fs.mkdirSync('/home/web_user/retroarch/userdata'); } catch (e) {}
-        try { fs.mkdirSync('/home/web_user/retroarch/userdata/saves'); } catch (e) {}
-        try { fs.mkdirSync('/home/web_user/retroarch/userdata/states'); } catch (e) {}
+        try { fs.mkdirSync('/home'); } catch (e) { /* ignore */ }
+        try { fs.mkdirSync('/home/web_user'); } catch (e) { /* ignore */ }
+        try { fs.mkdirSync('/home/web_user/retroarch'); } catch (e) { /* ignore */ }
+        try { fs.mkdirSync('/home/web_user/retroarch/cores'); } catch (e) { /* ignore */ }
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata'); } catch (e) { /* ignore */ }
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata/saves'); } catch (e) { /* ignore */ }
+        try { fs.mkdirSync('/home/web_user/retroarch/userdata/states'); } catch (e) { /* ignore */ }
 
         resolve(safeAfs);
     });
@@ -249,7 +249,7 @@ function writeROM(filename, arrayBuffer) {
 
 function exitGameplay() {
     if (window.Module) {
-        try { window.Module.retroArchSend("QUIT"); } catch (e) {}
+        try { window.Module.retroArchSend("QUIT"); } catch (e) { /* ignore */ }
     }
     window.location.reload();
 }
@@ -279,7 +279,7 @@ async function loadROM(game) {
         const core = coreMap[game.console.toUpperCase()] || 'fceumm';
         window.currentCore = core;
 
-        const afsInstance = await initBrowserFS();
+        await initBrowserFS();
 
         const res = await fetch(game.path);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -294,7 +294,7 @@ async function loadROM(game) {
         const BufferClass = BrowserFS.BFSRequire('buffer').Buffer;
         try {
             fs.writeFileSync(`/home/web_user/retroarch/cores/${core}_libretro.core`, BufferClass(new Uint8Array(0)));
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
 
         const coreScriptUrl = `./cores/${core}_libretro.js?cb=${Date.now()}`;
         const scriptModule = await import(coreScriptUrl);
@@ -313,12 +313,12 @@ async function loadROM(game) {
             retroArchRecv: function() {
                 return this.EmscriptenReceiveCommandReply ? this.EmscriptenReceiveCommandReply() : null;
             },
-            retroArchExit: function(core, content) {
+            retroArchExit: function() {
                 exitGameplay();
             },
             onRuntimeInitialized: function() {},
-            print: function(text) {},
-            printErr: function(text) {},
+            print: function() {},
+            printErr: function() {},
             canvas: canvas,
             parent: canvas.parentNode,
             arguments: [romPath, "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"],

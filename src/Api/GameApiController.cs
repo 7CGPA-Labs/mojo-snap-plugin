@@ -39,7 +39,7 @@ namespace MojoSnapPlugin.Api
             
             if (!System.IO.File.Exists(savePath))
             {
-                return Ok(new byte[0]);
+                return Ok(Array.Empty<byte>());
             }
 
             var data = System.IO.File.ReadAllBytes(savePath);

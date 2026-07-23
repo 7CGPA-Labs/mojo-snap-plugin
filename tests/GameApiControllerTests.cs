@@ -16,7 +16,7 @@ namespace MojoSnapPlugin.Tests
         {
             // Arrange
             var mockLibraryManager = new Mock<ILibraryManager>();
-            mockLibraryManager.Setup(m => m.GetItemById(It.IsAny<Guid>())).Returns((BaseItem)null);
+            mockLibraryManager.Setup(m => m.GetItemById(It.IsAny<Guid>())).Returns((BaseItem?)null);
             var controller = new GameApiController(mockLibraryManager.Object);
 
             // Act
