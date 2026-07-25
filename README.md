@@ -170,6 +170,8 @@ Connecting players via Virtual Gamepad Controller Android/iOS application using 
 ### 3. Emulation Additions
 - Addition of `dosbox_pure` from nightly build for DOS game support.
 
+### 4. Addition of CheerpJ+FreeJ2ME
+- Support J2ME JAR games
 ---
 
 ## License
