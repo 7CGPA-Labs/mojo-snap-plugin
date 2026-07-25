@@ -20,6 +20,7 @@ namespace MojoSnapPlugin
 
             var extension = Path.GetExtension(args.Path)?.ToLowerInvariant();
 
+            // ── Retro Console ROMs ────────────────────────────────────────────
             if (extension == ".nes" || 
                 extension == ".sfc" || 
                 extension == ".smc" || 
@@ -29,7 +30,11 @@ namespace MojoSnapPlugin
                 extension == ".bin" || 
                 extension == ".gb" || 
                 extension == ".gbc" || 
-                extension == ".gba")
+                extension == ".gba" ||
+                // ── Java ME packages ──────────────────────────────────────────────
+                extension == ".jar" ||
+                extension == ".jad" ||
+                extension == ".zip")
             {
                 return new Video
                 {

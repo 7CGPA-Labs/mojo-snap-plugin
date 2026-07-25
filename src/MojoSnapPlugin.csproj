@@ -9,9 +9,20 @@
     <Copyright>Copyright © 7CGPA-Labs 2026</Copyright>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Recommended</AnalysisMode>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.8.10" PrivateAssets="All" />
     <PackageReference Include="Jellyfin.Model" Version="10.8.10" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Embed Java ME launcher pages into the plugin assembly -->
+  <ItemGroup>
+    <EmbeddedResource Include="Web\j2me.html">
+      <LogicalName>MojoSnapPlugin.Web.j2me.html</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Web\j2me.js">
+      <LogicalName>MojoSnapPlugin.Web.j2me.js</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

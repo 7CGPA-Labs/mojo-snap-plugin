@@ -29,6 +29,12 @@ namespace MojoSnapPlugin
                     Name = "mojosnapplay",
                     EmbeddedResourcePath = GetType().Namespace + ".Web.play.html",
                     EnableInMainMenu = false
+                },
+                new PluginPageInfo
+                {
+                    Name = "mojosnapj2me",
+                    EmbeddedResourcePath = GetType().Namespace + ".Web.j2me.html",
+                    EnableInMainMenu = false
                 }
             };
         }

@@ -1,8 +1,8 @@
-name: Build Mojo Snap Plugin
+name: Build & Release Mojo Snap Plugin
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "src/**"
       - "shared/**"
@@ -12,7 +12,7 @@ on:
       - ".eslintrc.json"
       - ".github/workflows/build.yml"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "src/**"
       - "shared/**"
@@ -23,51 +23,98 @@ on:
       - ".github/workflows/build.yml"
 
 jobs:
-  build:
-    name: Build Mojo Snap Plugin
-    runs-on: windows-latest
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1 — Lint (runs in parallel with build for faster feedback)
+  # ─────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint JavaScript
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '6.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore src/MojoSnapPlugin.csproj
-
-      - name: Run Unit Tests
-        run: dotnet test tests/MojoSnapPlugin.Tests.csproj -c Release
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
 
-      - name: Install JS dependencies and run ESLint
-        run: |
-          npm install
-          npm run lint
+      - name: Install JS dependencies
+        run: npm ci
 
+      - name: Run ESLint
+        run: npm run lint
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Build & Package
+  # ─────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build Mojo Snap Plugin
+    runs-on: windows-latest
+    needs: lint
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── .NET setup ────────────────────────────────────────────────────────────
+      - name: Setup .NET SDK 6
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Restore NuGet dependencies
+        run: dotnet restore src/MojoSnapPlugin.csproj
+
+      # ── Unit tests ────────────────────────────────────────────────────────────
+      - name: Run Unit Tests
+        run: dotnet test tests/MojoSnapPlugin.Tests.csproj -c Release --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+
+      # ── Tools ─────────────────────────────────────────────────────────────────
       - name: Install 7-Zip
         run: choco install 7zip -y --no-progress
 
-      - name: Run Build Script (including Core download)
+      # ── Build script ──────────────────────────────────────────────────────────
+      # build.ps1 now:
+      #  1. Downloads & extracts RetroArch WASM cores  (retro emulation)
+      #  2. Downloads FreeJ2ME JAR                     (Java ME emulation)
+      #  3. Compiles the C# plugin via dotnet build
+      #  4. Packages all web assets + shared/ into dist/
+      #  5. Creates MojoSnapPlugin-Release.zip
+      - name: Run Build Script
         run: .\build.ps1
 
+      # ── Windows installer ─────────────────────────────────────────────────────
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 
       - name: Build Setup Executable
         run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
 
-      - name: Upload Releases
+      # ── Artifacts ─────────────────────────────────────────────────────────────
+      - name: Upload plugin DLL
         uses: actions/upload-artifact@v4
         with:
-          name: mojo-snap-releases
-          path: |
-            dist/MojoSnapPlugin.dll
-            dist/MojoSnap_Setup.exe
-# trigger CI
+          name: MojoSnapPlugin-dll
+          path: dist/MojoSnapPlugin.dll
+          if-no-files-found: error
+
+      - name: Upload release ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: MojoSnapPlugin-release-zip
+          path: MojoSnapPlugin-Release.zip
+          if-no-files-found: error
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: MojoSnapPlugin-installer
+          path: dist/MojoSnap_Setup.exe
+          if-no-files-found: warn
