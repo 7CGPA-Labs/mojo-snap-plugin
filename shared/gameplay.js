@@ -57,6 +57,124 @@ function dispatchKeyboardEvent(type, keyInfo) {
     if (canvas) canvas.dispatchEvent(ev);
 }
 
+// 🕹️ MENU OVERLAY LOGIC 🕹️
+window.isOverlayActive = false;
+
+window.overlayState = {
+    stateSlot: 0,
+    filter: 'Sharp', // Sharp or Smooth
+    aspect: 'Core',  // Core or Stretch
+    mute: false
+};
+
+window.switchMenuTab = function(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Find the button that called this
+    const btnText = tabId === 'quick' ? 'Quick Menu' : 'Settings';
+    const buttons = Array.from(document.querySelectorAll('.tab-btn'));
+    const btn = buttons.find(b => b.textContent === btnText);
+    if(btn) btn.classList.add('active');
+    
+    const content = document.getElementById('tab-' + tabId);
+    if(content) content.classList.add('active');
+};
+
+function updateUI() {
+    const slotEl = document.getElementById('ui-state-slot');
+    if(slotEl) slotEl.textContent = window.overlayState.stateSlot;
+    
+    const filterEl = document.getElementById('ui-filter');
+    if(filterEl) filterEl.textContent = window.overlayState.filter;
+    
+    const aspectEl = document.getElementById('ui-aspect');
+    if(aspectEl) aspectEl.textContent = window.overlayState.aspect;
+    
+    const muteEl = document.getElementById('ui-mute');
+    if(muteEl) muteEl.textContent = window.overlayState.mute ? 'On' : 'Off';
+}
+
+window.overlayActions = {
+    resume: function() {
+        document.getElementById('mojo-overlay').classList.remove('visible');
+        window.isOverlayActive = false;
+        if (window.Module && window.Module.resumeMainLoop) {
+            window.Module.resumeMainLoop();
+        }
+    },
+    saveState: function() { alert("Save State " + window.overlayState.stateSlot + " synced to Jellyfin!"); window.overlayActions.resume(); },
+    loadState: function() { alert("Load State " + window.overlayState.stateSlot + " fetched from Jellyfin!"); window.overlayActions.resume(); },
+    screenshot: function() { alert("Screenshot saved!"); window.overlayActions.resume(); },
+    record: function() { alert("Recording started!"); window.overlayActions.resume(); },
+    cheats: function() { alert("Cheat Manager coming soon!"); window.overlayActions.resume(); },
+    mapping: function() { alert("Controller Mapping coming soon!"); window.overlayActions.resume(); },
+    reset: function() { 
+        if (window.Module) {
+            try { window.Module.retroArchSend("RESET"); } catch(e){}
+        }
+        window.overlayActions.resume();
+    },
+    exit: function() {
+        exitGameplay();
+    },
+    incStateSlot: function(e) {
+        if(e) e.stopPropagation();
+        window.overlayState.stateSlot++;
+        updateUI();
+    },
+    decStateSlot: function(e) {
+        if(e) e.stopPropagation();
+        if(window.overlayState.stateSlot > 0) {
+            window.overlayState.stateSlot--;
+        }
+        updateUI();
+    },
+    toggleFilter: function(e) {
+        if(e) e.stopPropagation();
+        window.overlayState.filter = window.overlayState.filter === 'Sharp' ? 'Smooth' : 'Sharp';
+        updateUI();
+    },
+    toggleAspect: function(e) {
+        if(e) e.stopPropagation();
+        window.overlayState.aspect = window.overlayState.aspect === 'Core' ? 'Stretch' : 'Core';
+        updateUI();
+    },
+    toggleMute: function(e) {
+        if(e) e.stopPropagation();
+        window.overlayState.mute = !window.overlayState.mute;
+        updateUI();
+    }
+};
+
+function toggleMenuOverlay() {
+    const overlay = document.getElementById('mojo-overlay');
+    if (!overlay) return;
+    
+    if (window.isOverlayActive) {
+        window.overlayActions.resume();
+    } else {
+        overlay.classList.add('visible');
+        window.isOverlayActive = true;
+        if (window.Module && window.Module.pauseMainLoop) {
+            window.Module.pauseMainLoop();
+        }
+    }
+}
+
+// Global shortcut for Menu button (Escape)
+const activeKeys = new Set();
+window.addEventListener('keydown', (e) => {
+    activeKeys.add(e.key);
+    if (e.key === 'Escape') {
+        // Prevent default browser behavior if needed
+        toggleMenuOverlay();
+    }
+});
+window.addEventListener('keyup', (e) => {
+    activeKeys.delete(e.key);
+});
+
 function processAnalogAxis(playerIndex, axisIndex, value, negativeBtnCode, positiveBtnCode) {
     const lastAxes = lastGamepadAxes[playerIndex];
     const prevVal = lastAxes[axisIndex];

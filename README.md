@@ -227,6 +227,10 @@ push / pull_request
 Artifacts are available for download from the **Actions** tab of the GitHub repository after each successful build.
 
 ---
+## Feature Roadmap
+
+### Network Service Discovery — mDNS
+Connecting players via Virtual Gamepad Controller Android/iOS application using mDNS service broadcasting and low-latency binary protocol with a dual TCP/UDP architecture (UDP for ultra-fast local LAN inputs, TCP WebSocket for WAN fallback).
 
 ## 🚧 Future Development
 
@@ -236,6 +240,14 @@ Artifacts are available for download from the **Actions** tab of the GitHub repo
 | 2 | **Settings & Controls Overlay** — EmulatorJS-style toolbar: play/pause, volume, save states, video/audio/hardware settings, controller remapping, cheats, context menu | Planned |
 | 3 | **DOS Emulation** — `dosbox_pure` core for DOS games via `.zip` archives | Planned |
 | 4 | **Java ME Emulation** — CheerpJ + FreeJ2ME for `.jar`/`.jad` games | ✅ **Implemented** |
+
+### 4. Advanced Core Settings (RGUI Menu)
+Every web-compiled libretro core comes fully equipped with the standard RetroArch RGUI menu (the classic green interface). This menu allows users to tweak deep emulation settings (shaders, scaling, audio latency, core-specific options, and manual state management).
+You can access it in two ways:
+- **Keyboard Shortcut**: Press `F1` at any time during gameplay.
+- **Programmatically**: If you want to trigger it from a custom HTML button in the Mojo Snap OS overlay, call `window.Module.retroArchSend("MENU_TOGGLE");` in your JavaScript.
+
+*Note on Architecture: The RGUI menu is actually part of the RetroArch frontend, not the individual emulation cores. On Windows, Linux, and Android, the frontend dynamically loads the cores (e.g., `.dll` or `.so`), which act as pure emulation black boxes with no UI. However, for WebAssembly, the frontend and the core are statically compiled together into a single `.wasm` file, which is why the web cores used in this plugin have the RGUI menu baked directly into them!*
 
 ---
 

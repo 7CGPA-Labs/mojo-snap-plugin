@@ -4,7 +4,6 @@ using MediaBrowser.Common.Plugins;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
-
 namespace MojoSnapPlugin
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
@@ -13,17 +12,33 @@ namespace MojoSnapPlugin
             : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
+            StartService();
         }
 
         public override string Name => "Mojo Snap Console";
         public override Guid Id => Guid.Parse("f6e520d2-9706-44e9-acb5-5fb82bf9c37c");
+        public override string Description => "A beautiful, WebAssembly-powered Retro Emulation Console for Jellyfin.";
 
         public static Plugin Instance { get; private set; }
+
+        private VirtualControllerService _controllerService;
+
+        public void StartService()
+        {
+            _controllerService = new VirtualControllerService();
+            _controllerService.Start();
+        }
 
         public IEnumerable<PluginPageInfo> GetPages()
         {
             return new[]
             {
+                new PluginPageInfo
+                {
+                    Name = "mojosnapconfig",
+                    EmbeddedResourcePath = GetType().Namespace + ".Web.configPage.html",
+                    EnableInMainMenu = true
+                },
                 new PluginPageInfo
                 {
                     Name = "mojosnapplay",
@@ -42,6 +57,7 @@ namespace MojoSnapPlugin
 
     public class PluginConfiguration : BasePluginConfiguration
     {
-        // Settings configuration class
+        public string DefaultConsole { get; set; } = "NES";
+        public bool EnableAutoSave { get; set; } = true;
     }
 }

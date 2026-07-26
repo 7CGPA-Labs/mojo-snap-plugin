@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;

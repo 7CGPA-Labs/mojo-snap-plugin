@@ -1,4 +1,4 @@
-# Implementation Plan - Future Development Roadmap (v8)
+# Implementation Plan - Development Roadmap (v8)
 
 This implementation plan outlines the technical designs and workflow steps for implementing the remaining roadmap milestones.
 
