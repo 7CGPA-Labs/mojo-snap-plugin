@@ -13,7 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console: consoleType,
         path: `/MojoSnap/Rom/${romId}`,
         filename: `${romId}.${ext}`,
-        title: 'media-game'
+        title: 'media-game',
+        options: {
+            audioLatency: urlParams.get('audioLatency') || '64',
+            videoVsync: urlParams.get('videoVsync') || 'true'
+        }
     };
 
     // Load ROM using our shared emulation loader

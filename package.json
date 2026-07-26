@@ -1,0 +1,11 @@
+{
+  "name": "mojo-snap-plugin-web",
+  "version": "1.0.0",
+  "description": "Mojo Snap Plugin Web Client",
+  "scripts": {
+    "lint": "eslint shared/**/*.js src/Web/**/*.js"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

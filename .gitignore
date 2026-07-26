@@ -148,3 +148,7 @@ vite.config.ts.timestamp-*
 # C# Build Artifacts
 **/bin/
 **/obj/
+
+# Libretro Cores
+shared/cores/*_libretro.js
+shared/cores/*_libretro.wasm

@@ -7,7 +7,9 @@
     <Authors>7CGPA-Labs</Authors>
     <Company>7CGPA-Labs</Company>
     <Copyright>Copyright © 7CGPA-Labs 2026</Copyright>
-    <Version>1.0.0.0</Version>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.8.10" PrivateAssets="All" />
@@ -18,5 +20,15 @@
   <ItemGroup>
     <EmbeddedResource Include="logo96.png" />
     <EmbeddedResource Include="Web\configPage.html" />
+  </ItemGroup>
+
+  <!-- Embed Java ME launcher pages into the plugin assembly -->
+  <ItemGroup>
+    <EmbeddedResource Include="Web\j2me.html">
+      <LogicalName>MojoSnapPlugin.Web.j2me.html</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Web\j2me.js">
+      <LogicalName>MojoSnapPlugin.Web.j2me.js</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

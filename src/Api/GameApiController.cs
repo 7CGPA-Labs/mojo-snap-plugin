@@ -8,6 +8,7 @@ namespace MojoSnapPlugin.Api
 {
     [ApiController]
     [Route("MojoSnap")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class GameApiController : ControllerBase
     {
         private readonly ILibraryManager _libraryManager;
@@ -38,7 +39,7 @@ namespace MojoSnapPlugin.Api
             
             if (!System.IO.File.Exists(savePath))
             {
-                return Ok(new byte[0]);
+                return Ok(Array.Empty<byte>());
             }
 
             var data = System.IO.File.ReadAllBytes(savePath);
@@ -46,15 +47,15 @@ namespace MojoSnapPlugin.Api
         }
 
         [HttpPost("Save/{id}")]
+        [RequestSizeLimit(10_485_760)] // 10 MB limit for save states
         public async Task<IActionResult> PostSaveState(Guid id)
         {
             var pluginDir = Path.GetDirectoryName(Plugin.Instance.ConfigurationFilePath);
             var savePath = Path.Combine(pluginDir, $"{id}.srm");
 
-            using (var ms = new MemoryStream())
+            using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await Request.Body.CopyToAsync(ms);
-                System.IO.File.WriteAllBytes(savePath, ms.ToArray());
+                await Request.Body.CopyToAsync(fs);
             }
 
             return Ok();

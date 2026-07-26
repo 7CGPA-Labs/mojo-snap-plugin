@@ -139,3 +139,105 @@ Integrate the popular `dosbox_pure` core to support general DOS games, utilities
 2. **Setup Extension Boot Loader**:
    - Map `.zip` (containing MS-DOS game directories) to automatically launch the `dosbox_pure` core.
    - Configure virtual mounts to extract/identify and present game start selectors if multiple `.exe`/`.com`/`.bat` binaries are found within the ROM zip archive.
+
+---
+
+## 4. Java Mobile Emulation — CheerpJ + FreeJ2ME
+
+### Objective
+Add browser-based support for Java ME titles such as `.jar` and `.jad` files by bootstrapping a CheerpJ-compatible runtime and integrating FreeJ2ME-compatible app launching inside the existing plugin player flow.
+
+### Scope
+- Support common Java ME packages and manifests: `.jar`, `.jad`, and `.zip` archives containing Java game files.
+- Detect Java ME content automatically from the Jellyfin item metadata and launch it from the existing Retro Game experience.
+- Provide a lightweight browser launcher with basic input mapping, save persistence, and error reporting.
+
+### Technical Design
+1. **Runtime Packaging**
+   - Add a dedicated browser runtime bundle under `shared/` (for example `shared/cheerpj/`) containing the CheerpJ loader, FreeJ2ME-compatible assets, and any required Java runtime files.
+   - Prefer self-hosted assets from the plugin web folder to avoid external runtime dependency issues.
+
+2. **Backend API Extensions**
+   - Extend the plugin API to serve Java packages with correct MIME types and metadata.
+   - Add a resolver path for `.jar`/`.jad` content so the browser can request the correct bytes without exposing the underlying file structure.
+   - Parse `.jad` manifest files to identify the actual JAR entry point when present.
+
+3. **Browser Launcher**
+   - Create a dedicated player page such as `src/Web/j2me.html` and `src/Web/j2me.js`.
+   - Use the existing `play.html` pattern, but bootstrap the CheerpJ runtime instead of a RetroArch core.
+   - Download the selected Java package into the browser, stage it into a temporary virtual filesystem, and launch it through the runtime bridge.
+
+4. **Input and UI Mapping**
+   - Map gamepad buttons to MIDP-style controls such as D-pad, action keys, soft keys, and menu navigation.
+   - Support keyboard fallback for desktop browsers and touch input for mobile browsers.
+   - Provide a lightweight overlay with pause, reset, and exit controls.
+
+5. **Persistence and Save Data**
+   - Store per-game save data in the plugin-managed filesystem or browser storage and sync it back to the Jellyfin server when possible.
+   - Support save state and profile persistence across reloads.
+
+6. **Security and Stability**
+   - Restrict runtime access to plugin-served assets and avoid arbitrary file system access beyond the current game bundle.
+   - Implement clear error handling for unsupported JARs, missing manifests, runtime startup failures, and unsupported device features.
+
+### Implementation Phases
+1. **Proof of Concept**
+   - Validate that a simple sample `.jar` can be served and launched in-browser through CheerpJ.
+   - Confirm that the plugin can route a Jellyfin item to the new launcher page.
+
+2. **Plugin Integration**
+   - Add API endpoints, manifest parsing, and new UI entry points for Java ME content.
+   - Wire the launcher to the existing ROM selection flow.
+
+3. **Compatibility and Polish**
+   - Improve input mapping, touch support, save persistence, and error handling.
+   - Add support for multiple sample titles and document the known limitations.
+
+### Acceptance Criteria
+- `.jar` and `.jad` files can be detected and launched from the plugin UI.
+- The player loads in-browser without requiring a local Java installation.
+- Basic gamepad and keyboard input work for common Java ME titles.
+- Save data persists across sessions for supported titles.
+- Unsupported or broken packages report clear user-facing errors.
+
+### Engineering Checklist
+1. **Scaffold the runtime integration**
+   - Create a dedicated web asset folder such as `shared/cheerpj/`.
+   - Add the initial CheerpJ/FreeJ2ME runtime files and a placeholder bootstrap loader.
+   - Confirm the files are served correctly from the plugin web directory.
+
+2. **Add backend support for Java ME content**
+   - Extend the plugin API to stream `.jar`, `.jad`, and `.zip` content with appropriate MIME handling.
+   - Add a small manifest parser that reads `.jad` files and resolves the primary `.jar` entry.
+   - Expose a simple metadata endpoint for launcher UI decisions.
+
+3. **Create the browser launcher**
+   - Add `src/Web/j2me.html` and `src/Web/j2me.js`.
+   - Build a minimal launcher page that accepts a game identifier and loads the selected Java package.
+   - Wire the page into the existing plugin navigation flow.
+
+4. **Implement content detection**
+   - Update the Jellyfin injector logic so `.jar`, `.jad`, and Java-oriented archives are recognized as launchable content.
+   - Add a dedicated UI action such as “Play Java Game” for supported items.
+
+5. **Implement input handling**
+   - Map gamepad buttons to common MIDP controls (D-pad, fire, soft keys, menu).
+   - Add keyboard fallback and basic touch controls for mobile browsers.
+   - Include a simple overlay for pause/reset/exit actions.
+
+6. **Implement persistence**
+   - Store save data in browser storage or plugin-managed storage.
+   - Persist the current profile and save files across page reloads.
+   - Sync or restore data when the same game is launched again.
+
+7. **Add validation and fallback behavior**
+   - Handle missing runtime files, invalid manifests, launch failures, and unsupported Java packages with clear error messages.
+   - Log runtime errors in the browser console and surface a user-friendly fallback screen.
+
+8. **Test with sample titles**
+   - Validate one simple `.jar` sample first, then expand to a second title with a `.jad` manifest.
+   - Confirm game launching, input response, and save persistence on desktop and mobile browsers.
+
+9. **Document the integration**
+   - Add setup notes to the README explaining runtime requirements and known limitations.
+   - Record supported file formats and any packaging caveats for future contributors.
