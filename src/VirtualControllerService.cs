@@ -28,9 +28,11 @@ namespace MojoSnapPlugin
         // MOJO_VIRTUAL_MENU = 16 — app-internal, never forwarded to the emulator
         private const byte MOJO_VIRTUAL_MENU = 16;
 
-        private WebSocketServer _server;
-        private MulticastService _mdns;
-        private ServiceDiscovery _discovery;
+        private WebSocketServer? _server;
+        private MulticastService? _mdns;
+        private ServiceDiscovery? _discovery;
+        private ServiceProfile? _profile;
+        private int _port;
 
         private readonly object _socketsLock = new object();
         private readonly List<IWebSocketConnection> _displays      = new List<IWebSocketConnection>();
@@ -42,11 +44,36 @@ namespace MojoSnapPlugin
 
         public VirtualControllerService()
         {
-            _pairingPin = new Random().Next(100000, 1000000).ToString("D6");
+            _pairingPin = new Random().Next(100000, 1000000).ToString("D6", System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        private string _currentCore = "unknown";
+
         /// <summary>Name of the currently loaded core, advertised via mDNS.</summary>
-        public string CurrentCore { get; set; } = "unknown";
+        public string CurrentCore
+        {
+            get => _currentCore;
+            set
+            {
+                _currentCore = value;
+                if (_profile != null && _discovery != null)
+                {
+                    try
+                    {
+                        _profile.Resources.RemoveAll(r => r is TXTRecord);
+                        _profile.AddProperty("port", _port.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                        _profile.AddProperty("serverName", "Mojo Snap TV");
+                        _profile.AddProperty("hostType", "webos");
+                        _profile.AddProperty("core", _currentCore);
+                        _discovery.Advertise(_profile);
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore or log
+                    }
+                }
+            }
+        }
 
         /// <summary>Server-side button state — indexed by RETRO_DEVICE_ID_JOYPAD_* (0–15).</summary>
         public bool[] VirtualP1Buttons { get; } = new bool[16];
@@ -54,6 +81,7 @@ namespace MojoSnapPlugin
 
         public void Start(int port = 55443)
         {
+            _port = port;
             // ── WebSocket Server ────────────────────────────────────────────────────
             _server = new WebSocketServer($"ws://0.0.0.0:{port}");
             _server.Start(socket =>
@@ -152,7 +180,7 @@ namespace MojoSnapPlugin
                                         var qIdx = path.IndexOf("player=", StringComparison.OrdinalIgnoreCase);
                                         if (qIdx >= 0 && qIdx + 7 < path.Length)
                                         {
-                                            _ = int.TryParse(path.Substring(qIdx + 7, 1), out slot);
+                                            _ = int.TryParse(path.AsSpan(qIdx + 7, 1), out slot);
                                             slot = Math.Clamp(slot, 1, 2);
                                         }
 
@@ -186,13 +214,13 @@ namespace MojoSnapPlugin
             _mdns      = new MulticastService();
             _discovery = new ServiceDiscovery(_mdns);
 
-            var profile = new ServiceProfile(Environment.MachineName, "_retroconsole._tcp", (ushort)port);
-            profile.AddProperty("port",       port.ToString());
-            profile.AddProperty("serverName", "Mojo Snap TV");
-            profile.AddProperty("hostType",   "webos");
-            profile.AddProperty("core",       CurrentCore);
+            _profile = new ServiceProfile(Environment.MachineName, "_retroconsole._tcp", (ushort)port);
+            _profile.AddProperty("port",       port.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            _profile.AddProperty("serverName", "Mojo Snap TV");
+            _profile.AddProperty("hostType",   "webos");
+            _profile.AddProperty("core",       CurrentCore);
 
-            _discovery.Advertise(profile);
+            _discovery.Advertise(_profile);
             _mdns.Start();
         }
 
@@ -201,6 +229,7 @@ namespace MojoSnapPlugin
             _mdns?.Stop();
             _mdns?.Dispose();
             _server?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

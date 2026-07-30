@@ -262,7 +262,12 @@ namespace MojoSnapPlugin.Api
         /// <summary>Returns the filesystem path for the save blob of the given item ID.</summary>
         private static string GetSavePath(Guid id)
         {
-            var pluginDir = Path.GetDirectoryName(Plugin.Instance.ConfigurationFilePath)!;
+            var configPath = Plugin.Instance?.ConfigurationFilePath;
+            var pluginDir = !string.IsNullOrEmpty(configPath) ? Path.GetDirectoryName(configPath) : null;
+            if (string.IsNullOrEmpty(pluginDir))
+            {
+                pluginDir = Directory.GetCurrentDirectory();
+            }
             var saveDir   = Path.Combine(pluginDir, "j2me-saves");
             return Path.Combine(saveDir, $"{id}.rms");
         }

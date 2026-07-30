@@ -54,6 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
+    ws.onopen = () => {
+        if (window.retroArchRunning && window.currentCore) {
+            ws.send(JSON.stringify({ event: "core_loaded", core: window.currentCore }));
+        }
+    };
+
     ws.onmessage = (event) => {
         if (event.data instanceof ArrayBuffer) {
             // Binary frame — button/analog input from a controller.

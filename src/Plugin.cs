@@ -6,7 +6,7 @@ using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 namespace MojoSnapPlugin
 {
-    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
             : base(applicationPaths, xmlSerializer)
@@ -19,17 +19,31 @@ namespace MojoSnapPlugin
         public override Guid Id => Guid.Parse("f6e520d2-9706-44e9-acb5-5fb82bf9c37c");
         public override string Description => "A beautiful, WebAssembly-powered Retro Emulation Console for Jellyfin.";
 
-        public static Plugin Instance { get; private set; }
+        public static Plugin? Instance { get; private set; }
 
-        private VirtualControllerService _controllerService;
+        private VirtualControllerService? _controllerService;
 
         /// <summary>Provides access to the running VirtualControllerService so API controllers can update state (e.g. CurrentCore).</summary>
-        public VirtualControllerService ControllerService => _controllerService;
+        public VirtualControllerService? ControllerService => _controllerService;
 
         public void StartService()
         {
             _controllerService = new VirtualControllerService();
             _controllerService.Start();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _controllerService?.Dispose();
+            }
         }
 
         public IEnumerable<PluginPageInfo> GetPages()

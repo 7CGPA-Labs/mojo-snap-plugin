@@ -14,7 +14,7 @@ namespace MojoSnapPlugin
         {
             if (args.IsDirectory)
             {
-                return null;
+                return null!;
             }
 
             var extension = Path.GetExtension(args.Path)?.ToLowerInvariant();
@@ -42,7 +42,7 @@ namespace MojoSnapPlugin
                 };
             }
 
-            return null;
+            return null!;
         }
     }
 }

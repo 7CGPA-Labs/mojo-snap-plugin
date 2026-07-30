@@ -62,7 +62,16 @@ namespace MojoSnapPlugin.Api
         [HttpGet("Save/{id}")]
         public IActionResult GetSaveState(Guid id)
         {
-            var pluginDir = Path.GetDirectoryName(Plugin.Instance.ConfigurationFilePath);
+            var configPath = Plugin.Instance?.ConfigurationFilePath;
+            if (string.IsNullOrEmpty(configPath))
+            {
+                return BadRequest("Plugin configuration path not available.");
+            }
+            var pluginDir = Path.GetDirectoryName(configPath);
+            if (string.IsNullOrEmpty(pluginDir))
+            {
+                return BadRequest("Plugin directory not found.");
+            }
             var savePath = Path.Combine(pluginDir, $"{id}.srm");
             
             if (!System.IO.File.Exists(savePath))
@@ -78,7 +87,16 @@ namespace MojoSnapPlugin.Api
         [RequestSizeLimit(10_485_760)] // 10 MB limit for save states
         public async Task<IActionResult> PostSaveState(Guid id)
         {
-            var pluginDir = Path.GetDirectoryName(Plugin.Instance.ConfigurationFilePath);
+            var configPath = Plugin.Instance?.ConfigurationFilePath;
+            if (string.IsNullOrEmpty(configPath))
+            {
+                return BadRequest("Plugin configuration path not available.");
+            }
+            var pluginDir = Path.GetDirectoryName(configPath);
+            if (string.IsNullOrEmpty(pluginDir))
+            {
+                return BadRequest("Plugin directory not found.");
+            }
             var savePath = Path.Combine(pluginDir, $"{id}.srm");
 
             using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
