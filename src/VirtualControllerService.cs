@@ -42,7 +42,7 @@ namespace MojoSnapPlugin
 
         public VirtualControllerService()
         {
-            _pairingPin = new Random().Next(1000, 10000).ToString("D4");
+            _pairingPin = new Random().Next(100000, 1000000).ToString("D6");
         }
 
         /// <summary>Name of the currently loaded core, advertised via mDNS.</summary>
