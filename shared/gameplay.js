@@ -1,4 +1,18 @@
 // shared/gameplay.js
+const _AudioContext = window.AudioContext || window.webkitAudioContext;
+window.activeAudioContexts = [];
+if (_AudioContext && !window._audioContextHooked) {
+    window._audioContextHooked = true;
+    window.AudioContext = function() {
+        const ctx = new _AudioContext();
+        window.activeAudioContexts.push(ctx);
+        if (window.overlayState && window.overlayState.mute) {
+            try { ctx.suspend(); } catch(e){}
+        }
+        return ctx;
+    };
+    window.AudioContext.prototype = _AudioContext.prototype;
+}
 
 // 🎮 PHYSICAL KEYBOARD / GAMEPAD TRANSLATION MAPS 🎮
 const BUTTON_TO_KEY = {
@@ -63,9 +77,64 @@ window.isOverlayActive = false;
 window.overlayState = {
     stateSlot: 0,
     filter: 'Sharp', // Sharp or Smooth
-    aspect: 'Core',  // Core or Stretch
+    aspect: 'Core',  // Core, 4:3, 16:9, or Stretch
+    shader: 'None',  // None, CRT, or LCD
     mute: false
 };
+
+function applyOverlaySettings() {
+    // 1. Aspect Ratio and Object-Fit
+    const canvas = document.getElementById('canvas');
+    if (canvas) {
+        if (window.overlayState.aspect === 'Stretch') {
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.objectFit = 'fill';
+            canvas.style.aspectRatio = '';
+        } else if (window.overlayState.aspect === '16:9') {
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.objectFit = 'contain';
+            canvas.style.aspectRatio = '16/9';
+        } else if (window.overlayState.aspect === '4:3') {
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.objectFit = 'contain';
+            canvas.style.aspectRatio = '4/3';
+        } else { // 'Core'
+            canvas.style.width = '';
+            canvas.style.height = '';
+            canvas.style.objectFit = 'contain';
+            canvas.style.aspectRatio = '';
+        }
+
+        // 2. Scaling Filter
+        if (window.overlayState.filter === 'Smooth') {
+            canvas.style.imageRendering = 'auto';
+        } else { // 'Sharp'
+            canvas.style.imageRendering = 'pixelated';
+        }
+    }
+
+    // 3. Shader Filter overlays
+    const crt = document.getElementById('crt-shader');
+    const lcd = document.getElementById('lcd-shader');
+    if (crt) crt.style.display = window.overlayState.shader === 'CRT' ? 'block' : 'none';
+    if (lcd) lcd.style.display = window.overlayState.shader === 'LCD' ? 'block' : 'none';
+
+    // 4. Audio Mute control
+    if (window.activeAudioContexts) {
+        window.activeAudioContexts.forEach(ctx => {
+            try {
+                if (window.overlayState.mute) {
+                    if (ctx.state === 'running') ctx.suspend();
+                } else {
+                    if (ctx.state === 'suspended') ctx.resume();
+                }
+            } catch(e){}
+        });
+    }
+}
 
 window.switchMenuTab = function(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -90,6 +159,9 @@ function updateUI() {
     
     const aspectEl = document.getElementById('ui-aspect');
     if(aspectEl) aspectEl.textContent = window.overlayState.aspect;
+
+    const shaderEl = document.getElementById('ui-shader');
+    if(shaderEl) shaderEl.textContent = window.overlayState.shader || 'None';
     
     const muteEl = document.getElementById('ui-mute');
     if(muteEl) muteEl.textContent = window.overlayState.mute ? 'On' : 'Off';
@@ -134,16 +206,31 @@ window.overlayActions = {
         if(e) e.stopPropagation();
         window.overlayState.filter = window.overlayState.filter === 'Sharp' ? 'Smooth' : 'Sharp';
         updateUI();
+        applyOverlaySettings();
     },
     toggleAspect: function(e) {
         if(e) e.stopPropagation();
-        window.overlayState.aspect = window.overlayState.aspect === 'Core' ? 'Stretch' : 'Core';
+        const modes = ['Core', '4:3', '16:9', 'Stretch'];
+        let idx = modes.indexOf(window.overlayState.aspect);
+        idx = (idx + 1) % modes.length;
+        window.overlayState.aspect = modes[idx];
         updateUI();
+        applyOverlaySettings();
+    },
+    toggleShader: function(e) {
+        if(e) e.stopPropagation();
+        const shaders = ['None', 'CRT', 'LCD'];
+        let idx = shaders.indexOf(window.overlayState.shader || 'None');
+        idx = (idx + 1) % shaders.length;
+        window.overlayState.shader = shaders[idx];
+        updateUI();
+        applyOverlaySettings();
     },
     toggleMute: function(e) {
         if(e) e.stopPropagation();
         window.overlayState.mute = !window.overlayState.mute;
         updateUI();
+        applyOverlaySettings();
     }
 };
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Fleck;
 using Makaretu.Dns;
 
@@ -35,6 +36,14 @@ namespace MojoSnapPlugin
         private readonly List<IWebSocketConnection> _displays      = new List<IWebSocketConnection>();
         private readonly List<IWebSocketConnection> _p1Controllers = new List<IWebSocketConnection>();
         private readonly List<IWebSocketConnection> _p2Controllers = new List<IWebSocketConnection>();
+        private readonly Dictionary<IWebSocketConnection, bool> _socketAuthState = new Dictionary<IWebSocketConnection, bool>();
+
+        private readonly string _pairingPin;
+
+        public VirtualControllerService()
+        {
+            _pairingPin = new Random().Next(1000, 10000).ToString("D4");
+        }
 
         /// <summary>Name of the currently loaded core, advertised via mDNS.</summary>
         public string CurrentCore { get; set; } = "unknown";
@@ -57,23 +66,12 @@ namespace MojoSnapPlugin
                         if (path.Contains("/display"))
                         {
                             _displays.Add(socket);
+                            socket.Send($"{{\"event\":\"pairing_pin\",\"pin\":\"{_pairingPin}\"}}");
                         }
                         else if (path.Contains("/controller"))
                         {
-                            // Parse ?player=1 or ?player=2 — default P2
-                            int slot = 2;
-                            var qIdx = path.IndexOf("player=", StringComparison.OrdinalIgnoreCase);
-                            if (qIdx >= 0 && qIdx + 7 < path.Length)
-                            {
-                                _ = int.TryParse(path.Substring(qIdx + 7, 1), out slot);
-                                slot = Math.Clamp(slot, 1, 2);
-                            }
-
-                            if (slot == 1) _p1Controllers.Add(socket);
-                            else           _p2Controllers.Add(socket);
-
-                            // Immediately tell the joining client which core is running
-                            socket.Send($"{{\"event\":\"core_loaded\",\"core\":\"{CurrentCore}\"}}");
+                            _socketAuthState[socket] = false;
+                            socket.Send("{\"event\":\"pin_challenge\"}");
                         }
                     }
                 };
@@ -85,6 +83,7 @@ namespace MojoSnapPlugin
                         _displays.Remove(socket);
                         _p1Controllers.Remove(socket);
                         _p2Controllers.Remove(socket);
+                        _socketAuthState.Remove(socket);
                     }
                 };
 
@@ -99,6 +98,12 @@ namespace MojoSnapPlugin
 
                     // Block MOJO_VIRTUAL_MENU (ID 16) — never reaches the emulator
                     if (inputId == MOJO_VIRTUAL_MENU) return;
+
+                    lock (_socketsLock)
+                    {
+                        if (!_socketAuthState.TryGetValue(socket, out bool authenticated) || !authenticated)
+                            return;
+                    }
 
                     // Update server-side state
                     if ((actionPhase == 1 || actionPhase == 2) && inputId < 16)
@@ -117,8 +122,6 @@ namespace MojoSnapPlugin
                 };
 
                 // Text (JSON): bidirectional relay
-                //   display     → controllers : core_loaded, state events
-                //   controllers → display     : menu_toggle (and any future text events)
                 socket.OnMessage = (message) =>
                 {
                     lock (_socketsLock)
@@ -131,9 +134,49 @@ namespace MojoSnapPlugin
                         }
                         else
                         {
-                            // Controller → all display clients (e.g. menu_toggle)
-                            foreach (var display in _displays)
-                                display.Send(message);
+                            // Controller message check PIN
+                            if (message.Contains("\"event\":\"pin_auth\"") || message.Contains("\"event\": \"pin_auth\""))
+                            {
+                                var match = Regex.Match(message, "\"pin\"\\s*:\\s*\"([^\"]+)\"");
+                                if (match.Success)
+                                {
+                                    string clientPin = match.Groups[1].Value;
+                                    if (clientPin == _pairingPin)
+                                    {
+                                        _socketAuthState[socket] = true;
+                                        socket.Send("{\"event\":\"pin_success\"}");
+
+                                        // Parse ?player=1 or ?player=2
+                                        var path = socket.ConnectionInfo.Path;
+                                        int slot = 2;
+                                        var qIdx = path.IndexOf("player=", StringComparison.OrdinalIgnoreCase);
+                                        if (qIdx >= 0 && qIdx + 7 < path.Length)
+                                        {
+                                            _ = int.TryParse(path.Substring(qIdx + 7, 1), out slot);
+                                            slot = Math.Clamp(slot, 1, 2);
+                                        }
+
+                                        if (slot == 1) _p1Controllers.Add(socket);
+                                        else           _p2Controllers.Add(socket);
+
+                                        // Immediately tell the joining client which core is running
+                                        socket.Send($"{{\"event\":\"core_loaded\",\"core\":\"{CurrentCore}\"}}");
+                                    }
+                                    else
+                                    {
+                                        socket.Send("{\"event\":\"pin_fail\",\"reason\":\"Incorrect PIN\"}");
+                                        socket.Close();
+                                    }
+                                }
+                                return;
+                            }
+
+                            // Relay if authenticated
+                            if (_socketAuthState.TryGetValue(socket, out bool auth) && auth)
+                            {
+                                foreach (var display in _displays)
+                                    display.Send(message);
+                            }
                         }
                     }
                 };

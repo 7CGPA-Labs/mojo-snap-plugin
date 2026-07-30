@@ -56,10 +56,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ws.onmessage = (event) => {
         if (event.data instanceof ArrayBuffer) {
-            // Binary frame — button/analog input from a controller
+            // Binary frame — button/analog input from a controller.
+            // Probe for the actual RetroArch WASM export name at runtime rather
+            // than hardcoding a single name that may differ between RA builds.
             const buffer = new Uint8Array(event.data);
-            if (window.Module && typeof window.Module.retroArchSend === 'function') {
-                window.Module.retroArchSend(buffer);
+            if (window.Module) {
+                // Common export names across different RetroArch WASM builds:
+                const fn = window.Module.retroArchSend          // most common
+                    ?? window.Module._retroarch_send_input       // underscore-prefixed C symbol
+                    ?? window.Module.retroarch_send_input        // snake_case variant
+                    ?? null;
+                if (typeof fn === 'function') {
+                    fn(buffer);
+                } else if (typeof window.Module.ccall === 'function') {
+                    // Last resort: use Emscripten's ccall if the symbol is not directly exposed
+                    try {
+                        window.Module.ccall('retroarch_send_input', null, ['array', 'number'], [buffer, buffer.length]);
+                    } catch (e) {
+                        console.warn('[MojoSnap] retroarch_send_input not found via ccall:', e);
+                    }
+                } else {
+                    console.warn('[MojoSnap] No retroarch input function found on window.Module. ' +
+                        'Expected: retroArchSend / _retroarch_send_input / retroarch_send_input');
+                }
             }
         } else if (typeof event.data === 'string') {
             // Text frame — JSON event from a controller or server
@@ -71,6 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (msg.event === 'core_loaded') {
                     window.currentCore = msg.core;
                     console.log(`[MojoSnap] Core loaded: ${msg.core}`);
+                } else if (msg.event === 'pairing_pin') {
+                    window.pairingPin = msg.pin;
+                    console.log(`[MojoSnap] Pairing PIN: ${msg.pin}`);
+                    const el = document.getElementById('pairing-pin-display');
+                    if (el) {
+                        el.textContent = `Pairing PIN: ${msg.pin}`;
+                        el.style.display = 'block';
+                    }
                 }
             } catch (e) {
                 // Not JSON — ignore

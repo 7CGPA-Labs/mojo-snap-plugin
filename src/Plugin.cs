@@ -23,6 +23,9 @@ namespace MojoSnapPlugin
 
         private VirtualControllerService _controllerService;
 
+        /// <summary>Provides access to the running VirtualControllerService so API controllers can update state (e.g. CurrentCore).</summary>
+        public VirtualControllerService ControllerService => _controllerService;
+
         public void StartService()
         {
             _controllerService = new VirtualControllerService();
